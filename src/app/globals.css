@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand — Alpine green + saffron */
+  --color-primary: #166534;
+  --color-primary-dark: #14532d;
+  --color-primary-light: #22c55e;
+  --color-secondary: #d97706;
+  --color-secondary-dark: #b45309;
+
+  --color-foreground: #1c1917;
+  --color-muted: #57534e;
+  --color-muted-foreground: #79716b;
+  --color-background: #faf9f7;
+  --color-card: #ffffff;
+  --color-border: #e7e5e4;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
+
+::selection {
+  background-color: var(--color-primary);
+  color: #ffffff;
+}
