@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Modal from "@/components/ui/Modal";
 import EnquiryForm from "@/components/forms/EnquiryForm";
+import type { FormType } from "@/config/forms";
 
 export default function EnquiryModal({
   label,
@@ -12,6 +13,7 @@ export default function EnquiryModal({
   size = "lg",
   className = "",
   initialValues,
+  formType = "tour",
 }: {
   label: string;
   title?: string;
@@ -20,6 +22,8 @@ export default function EnquiryModal({
   size?: "md" | "lg";
   className?: string;
   initialValues?: { destination?: string; package?: string };
+  /** Routes the lead to the right Google Sheet tab. */
+  formType?: FormType;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -49,18 +53,16 @@ export default function EnquiryModal({
         <div className="p-5 sm:p-7">
           <h2
             id="enquiry-modal-title"
-            className="font-display text-xl font-bold text-foreground"
+            className="font-display pr-8 text-xl font-bold text-foreground"
           >
             {title}
           </h2>
-          <p className="mt-1 text-sm text-muted">
-            {subtitle}
-          </p>
+          <p className="mt-1 text-sm text-muted">{subtitle}</p>
           <div className="mt-5">
             <EnquiryForm
+              formType={formType}
               compact
               initialValues={initialValues}
-              onSuccess={() => {}}
             />
           </div>
         </div>

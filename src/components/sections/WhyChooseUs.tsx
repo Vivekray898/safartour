@@ -9,7 +9,33 @@ import {
 } from "lucide-react";
 import Container from "@/components/ui/Container";
 import SectionHeading from "@/components/ui/SectionHeading";
-import { whyChooseUs } from "@/data/site";
+
+const whyChooseUs = [
+  {
+    title: "Local Hill Knowledge",
+    description:
+      "Based in Siliguri at the foot of the hills, we know road conditions, seasonal weather, and travel times from first-hand experience.",
+    icon: "map",
+  },
+  {
+    title: "Reliable Vehicles & Hill Drivers",
+    description:
+      "All trips use well-maintained private cars driven by courteous local drivers who know mountain driving safely.",
+    icon: "car",
+  },
+  {
+    title: "Flexible, Tailored Planning",
+    description:
+      "Every journey is shaped around your schedule, family preferences, and budget. No rigid tours or rushed sightseeing.",
+    icon: "route",
+  },
+  {
+    title: "Direct & Reachable Support",
+    description:
+      "From planning before you leave home to coordination on the road, our team is directly reachable on phone and WhatsApp.",
+    icon: "headset",
+  },
+] as const;
 
 const iconMap: Record<string, LucideIcon> = {
   map: Map,

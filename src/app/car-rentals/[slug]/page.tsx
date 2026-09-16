@@ -160,6 +160,7 @@ export default async function VehicleDetailPage({ params }: { params: Params }) 
                 <EnquiryModal
                   label="Get Rental Quote"
                   title={`Book a ${vehicle.name}`}
+                  formType="car"
                   initialValues={{ destination: "Car Rental / Transfer", package: vehicle.name }}
                   className="w-full"
                 />

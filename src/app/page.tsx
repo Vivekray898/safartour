@@ -51,7 +51,11 @@ export default function Home() {
         <TrustIntro />
 
         {/* 3. Popular Destinations */}
-        <section className="py-14 sm:py-16 md:py-20" aria-labelledby="destinations-heading">
+        <section
+          id="destinations"
+          className="scroll-mt-20 py-14 sm:py-16 md:py-20"
+          aria-labelledby="destinations-heading"
+        >
           <Container>
             <SectionHeading
               eyebrow="Where We Go"

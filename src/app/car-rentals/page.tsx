@@ -104,6 +104,7 @@ export default function CarRentalsPage() {
             <EnquiryModal
               label="Get Rental Quote"
               title="Get Rental Quote"
+              formType="car"
               initialValues={{ destination: "Car Rental / Transfer" }}
             />
           </div>

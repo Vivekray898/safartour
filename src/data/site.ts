@@ -38,82 +38,16 @@ export const siteConfig = {
 } as const;
 
 /**
- * Marketing stats are UNVERIFIED.
- * Confirm real figures with the business owner before launch —
- * items marked `confirmed: false` render without implying hard numbers.
+ * Why-choose-us content now lives beside the component that renders it
+ * (src/components/sections/WhyChooseUs.tsx) — removed the unused exports
+ * (stats / howItWorks) so this file stays purely navigational + business info.
  */
-export const stats = [
-  { value: "5000+", label: "Happy Travellers", confirmed: false },
-  { value: "Multiple", label: "Destinations Across Northeast India", confirmed: true },
-  { value: "Diverse", label: "Fleet of Vehicles", confirmed: true },
-  { value: "24/7", label: "Travel Support", confirmed: true },
-] as const;
-
-export type Stat = (typeof stats)[number];
-
-export const whyChooseUs = [
-  {
-    title: "Local Hill Knowledge",
-    description:
-      "Based in Siliguri at the foot of the hills, we know road conditions, seasonal weather, and travel times from first-hand experience.",
-    icon: "map",
-  },
-  {
-    title: "Reliable Vehicles & Hill Drivers",
-    description:
-      "All trips use well-maintained private cars driven by courteous local drivers who know mountain driving safely.",
-    icon: "car",
-  },
-  {
-    title: "Flexible, Tailored Planning",
-    description:
-      "Every journey is shaped around your schedule, family preferences, and budget. No rigid tours or rushed sightseeing.",
-    icon: "route",
-  },
-  {
-    title: "Direct & Reachable Support",
-    description:
-      "From planning before you leave home to coordination on the road, our team is directly reachable on phone and WhatsApp.",
-    icon: "headset",
-  },
-] as const;
-
-export const howItWorks = [
-  {
-    step: "01",
-    title: "Tell Us Your Plan",
-    description:
-      "Share your destination, dates and group size through the enquiry form, WhatsApp or a phone call.",
-    icon: "message",
-  },
-  {
-    step: "02",
-    title: "Get Your Itinerary",
-    description:
-      "We prepare a tailored itinerary with stays, sightseeing and transport — and refine it with you.",
-    icon: "map",
-  },
-  {
-    step: "03",
-    title: "Confirm Your Trip",
-    description:
-      "Happy with the plan? Confirm with a simple booking advance and we handle the rest.",
-    icon: "check",
-  },
-  {
-    step: "04",
-    title: "Enjoy Your Journey",
-    description:
-      "Arrive, meet your driver and travel with a team that stays reachable throughout your trip.",
-    icon: "mountain",
-  },
-] as const;
 
 export const nav: NavItem[] = [
   { label: "Home", href: "/" },
   { label: "Packages", href: "/packages" },
   { label: "Car Rentals", href: "/car-rentals" },
-  { label: "Destinations", href: "/packages#destinations" },
+  { label: "Destinations", href: "/#destinations" },
   { label: "Travel Guides", href: "/guides" },
   { label: "About", href: "/about-us" },
   { label: "Contact", href: "/contact" },

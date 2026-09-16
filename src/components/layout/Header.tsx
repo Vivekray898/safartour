@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import { nav, siteConfig } from "@/data/site";
+import { isNavItemActive } from "@/lib/nav";
 import MobileMenu from "@/components/layout/MobileMenu";
 import EnquiryModal from "@/components/forms/EnquiryModal";
 
@@ -22,8 +23,7 @@ export default function Header() {
 
   const closeMobile = () => setMobileOpen(false);
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const isActive = (href: string) => isNavItemActive(pathname, href);
 
   return (
     <>

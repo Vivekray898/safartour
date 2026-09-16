@@ -262,7 +262,10 @@ export default async function PackageDetailPage({
 
           {/* Sidebar - Informative & Contextual */}
           <aside className="lg:sticky lg:top-24 lg:self-start">
-            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <div
+              id="enquiry"
+              className="scroll-mt-24 rounded-xl border border-border bg-card p-6 shadow-sm"
+            >
               <span className="text-xs font-semibold uppercase tracking-wider text-secondary">
                 {destinationInfo?.name ?? pkg.destinationSlug} &bull; {pkg.duration}
               </span>

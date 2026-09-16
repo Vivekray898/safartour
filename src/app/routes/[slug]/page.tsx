@@ -184,7 +184,11 @@ export default async function RouteDetailPage({ params }: { params: Params }) {
                 <EnquiryModal
                   label="Get Quote"
                   title={`${route.from} → ${route.to}`}
-                  initialValues={{ destination: "Car Rental / Transfer" }}
+                  formType="car"
+                  initialValues={{
+                    destination: "Car Rental / Transfer",
+                    package: `Transfer: ${route.from} → ${route.to}`,
+                  }}
                   className="w-full"
                 />
               </div>

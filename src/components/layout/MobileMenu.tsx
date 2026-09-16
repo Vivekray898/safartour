@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { X, Phone, MessageSquare } from "lucide-react";
 import { nav, siteConfig } from "@/data/site";
+import { isNavItemActive } from "@/lib/nav";
 import { getWhatsAppUrl, generalEnquiryMessage } from "@/lib/whatsapp";
 import EnquiryModal from "@/components/forms/EnquiryModal";
 
@@ -75,32 +76,22 @@ export default function MobileMenu({
         className="flex-1 overflow-y-auto px-4 py-5"
       >
         <ul className="space-y-1">
-          {nav.map((item) => (
+          {[...nav, { label: "Gallery", href: "/gallery" }].map((item) => (
             <li key={item.label}>
               <Link
                 href={item.href}
                 onClick={onClose}
-                className={`block rounded-lg px-3.5 py-3 text-base font-medium transition-colors hover:bg-foreground/5 ${
-                  pathname === item.href
+                className={`block rounded-lg px-3.5 py-3 text-base font-medium transition-colors hover:bg-foreground/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                  isNavItemActive(pathname, item.href)
                     ? "font-semibold text-primary"
                     : "text-foreground"
                 }`}
+                aria-current={isNavItemActive(pathname, item.href) ? "page" : undefined}
               >
                 {item.label}
               </Link>
             </li>
           ))}
-          <li>
-            <Link
-              href="/gallery"
-              onClick={onClose}
-              className={`block rounded-lg px-3.5 py-3 text-base font-medium transition-colors hover:bg-foreground/5 ${
-                pathname === "/gallery" ? "font-semibold text-primary" : "text-foreground"
-              }`}
-            >
-              Gallery
-            </Link>
-          </li>
         </ul>
 
         <div className="mt-6 border-t border-border pt-6">
