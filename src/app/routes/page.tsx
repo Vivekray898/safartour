@@ -11,7 +11,7 @@ import { images } from "@/data/images";
 export const metadata = buildMetadata({
   title: "Taxi Routes & Transfers — Bagdogra, NJP, Darjeeling, Gangtok",
   description:
-    "Private taxi transfers between Bagdogra Airport, NJP station, Darjeeling, Gangtok, Pelling and more. Get current fares from Safar Tours.",
+    "Route guide for private transfers between Bagdogra Airport, NJP station, Darjeeling, Gangtok, Kalimpong, the Dooars and more — journey times, vehicle options and current fares from Safar Tours.",
   path: "/routes",
   ogImage: images.carRental.src,
 });
@@ -26,8 +26,8 @@ export default function RoutesPage() {
   return (
     <>
       <PageHero
-        title="Transfer Routes Across the Region"
-        subtitle="Private, fixed-price-quote transfers between airports, railway stations and every major hill destination."
+        title="Route & Fare Guide"
+        subtitle="Private, fixed-quote transfers between Bagdogra Airport, NJP station and every major destination — with realistic journey times so you can plan your day."
         image={images.carRental.src}
         imageAlt={images.carRental.alt}
         priority
@@ -35,6 +35,22 @@ export default function RoutesPage() {
       >
         <Breadcrumbs items={[{ name: "Routes", href: "/routes" }]} />
       </PageHero>
+
+      {/* How quoting works — the honest alternative to published price tables */}
+      <Container className="pt-10 lg:pt-12">
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 sm:p-7">
+          <h2 className="font-display text-lg font-bold text-foreground">
+            How our fares work
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">
+            We quote each transfer individually rather than publishing fixed
+            prices, because the right fare depends on your vehicle, season, and
+            exact pickup point. Every quote is agreed before you travel — no
+            surge, no haggling at the station. Tell us your route and we reply
+            with the current fare, usually within a few hours.
+          </p>
+        </div>
+      </Container>
 
       {groups.map((group) => {
         const groupRoutes = routes.filter((r) => r.routeType === group.type);

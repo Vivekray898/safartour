@@ -13,6 +13,7 @@ import JsonLd from "@/components/seo/JsonLd";
 import { buildMetadata, faqJsonLd } from "@/lib/seo";
 import { getGuide, guides } from "@/data/guides";
 import { packages } from "@/data/packages";
+import { getRouteForDestination } from "@/data/routes";
 
 type Params = Promise<{ slug: string }>;
 
@@ -45,6 +46,7 @@ export default async function GuidePage({ params }: { params: Params }) {
   const relatedPackages = packages
     .filter((p) => p.destinationSlug === destinationSlug)
     .slice(0, 3);
+  const transferRoute = getRouteForDestination(destinationSlug);
   const otherGuides = guides.filter((g) => g.slug !== slug).slice(0, 3);
 
   return (
@@ -178,6 +180,14 @@ export default async function GuidePage({ params }: { params: Params }) {
                 >
                   View Packages
                 </Link>
+                {transferRoute ? (
+                  <Link
+                    href={`/routes/${transferRoute.slug}`}
+                    className="mt-2.5 block rounded-lg px-1 py-1.5 text-center text-xs font-medium text-muted transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  >
+                    {transferRoute.from} → {transferRoute.to}: {transferRoute.duration?.replace("~", "approx. ") ?? "private transfer"}
+                  </Link>
+                ) : null}
               </div>
             </aside>
           </div>

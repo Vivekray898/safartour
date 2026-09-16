@@ -98,8 +98,8 @@ export default function Home() {
           <Container>
             <SectionHeading
               eyebrow="Private Transportation"
-              title="Car Rentals & Transfers"
-              description="Well-maintained vehicles with experienced hill drivers for Bagdogra / NJP pickups and multi-day tours."
+              title="Our Fleet for Every Trip"
+              description="From nimble hatchbacks to group tempo travellers — every rental includes an experienced hill driver."
             />
             <div className="mt-10">
               <VehicleGrid vehicles={vehicles.slice(0, 3)} />

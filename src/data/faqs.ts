@@ -40,6 +40,16 @@ export const homeFaqs: FAQ[] = [
       "Yes, all our rentals are private vehicles with a dedicated driver, so your group travels together on your own schedule.",
   },
   {
+    question: "How long does the drive take from NJP or Bagdogra to the hills?",
+    answer:
+      "Approximate drive times: NJP or Bagdogra to Darjeeling takes about 3 to 3.5 hours, to Gangtok about 4 to 4.5 hours, and to Kalimpong about 2.5 to 3 hours. Times vary with season and traffic — see our Route & Fare Guide for details on each journey.",
+  },
+  {
+    question: "Can I book only a transfer, without a package?",
+    answer:
+      "Yes. Every transfer and rental stands on its own — airport and station pickups, point-to-point routes, sightseeing days, or a multi-day car with driver. You never need to book a full package.",
+  },
+  {
     question: "How can I request a quotation?",
     answer:
       "Send us an enquiry through any form on this website, message us on WhatsApp, or call us directly — we usually respond within a few hours during business hours.",

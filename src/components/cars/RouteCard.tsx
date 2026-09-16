@@ -1,12 +1,20 @@
 import Link from "next/link";
-import { ArrowRight, ArrowRightLeft } from "lucide-react";
+import { ArrowRight, ArrowRightLeft, Clock } from "lucide-react";
 import type { RouteInfo } from "@/data/routes";
 import Badge from "@/components/ui/Badge";
 
 export default function RouteCard({ route }: { route: RouteInfo }) {
   return (
     <article className="group flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow duration-300 hover:shadow-lg">
-      <Badge variant="secondary">{route.routeType}</Badge>
+      <div className="flex items-center justify-between gap-2">
+        <Badge variant="secondary">{route.routeType}</Badge>
+        {route.duration ? (
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+            <Clock className="h-3.5 w-3.5" aria-hidden />
+            {route.duration.replace("~", "approx. ")}
+          </span>
+        ) : null}
+      </div>
       <h3 className="mt-3 flex items-start gap-2 font-display text-base font-bold leading-snug text-foreground">
         <ArrowRightLeft
           className="mt-1 h-4 w-4 shrink-0 text-primary"

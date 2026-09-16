@@ -1,14 +1,28 @@
 import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { footerExplore, siteConfig } from "@/data/site";
+import { routes } from "@/data/routes";
 import { getWhatsAppUrl, generalEnquiryMessage } from "@/lib/whatsapp";
 
 const packageLinks = [
-  { label: "All Packages", href: "/packages" },
-  { label: "Sikkim", href: "/packages/sikkim" },
-  { label: "Darjeeling", href: "/packages/darjeeling" },
-  { label: "Kalimpong", href: "/packages/kalimpong" },
+  { label: "All Tour Packages", href: "/packages" },
+  { label: "Car Rentals", href: "/car-rentals" },
+  { label: "Transfers & Routes", href: "/routes" },
+  { label: "Travel Guides", href: "/guides" },
 ];
+
+// Five most-booked transfers, shown in footer order.
+const popularRouteSlugs = [
+  "njp-to-darjeeling",
+  "njp-to-gangtok",
+  "bagdogra-airport-to-darjeeling",
+  "bagdogra-airport-to-gangtok",
+  "njp-to-kalimpong",
+];
+
+const popularRoutes = popularRouteSlugs
+  .map((slug) => routes.find((r) => r.slug === slug))
+  .filter((r): r is NonNullable<typeof r> => Boolean(r));
 
 const carRentalLinks = [
   { label: "SUV", href: "/car-rentals/suv" },
@@ -111,10 +125,10 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Explore */}
+          {/* Destinations */}
           <nav aria-label="Explore destinations">
             <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-white/60">
-              Explore
+              Destinations
             </h3>
             <ul className="mt-4 space-y-2.5 text-sm">
               {footerExplore.map((l) => (
@@ -127,10 +141,34 @@ export default function Footer() {
             </ul>
           </nav>
 
-          {/* Tour Packages */}
-          <nav aria-label="Tour packages">
+          {/* Popular routes */}
+          <nav aria-label="Popular transfer routes">
             <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-white/60">
-              Tour Packages
+              Popular Routes
+            </h3>
+            <ul className="mt-4 space-y-2.5 text-sm">
+              {popularRoutes.map((r) => (
+                <li key={r.slug}>
+                  <Link
+                    href={`/routes/${r.slug}`}
+                    className="text-white/80 transition-colors hover:text-white"
+                  >
+                    {r.from} → {r.to}
+                  </Link>
+                </li>
+              ))}
+              <li>
+                <Link href="/routes" className="text-white/60 transition-colors hover:text-white">
+                  All routes →
+                </Link>
+              </li>
+            </ul>
+          </nav>
+
+          {/* Services */}
+          <nav aria-label="Services">
+            <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-white/60">
+              Services
             </h3>
             <ul className="mt-4 space-y-2.5 text-sm">
               {packageLinks.map((l) => (

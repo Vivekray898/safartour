@@ -25,24 +25,24 @@ export const metadata = buildMetadata({
 
 const transferServices = [
   {
-    title: "Airport Transfers",
+    title: "Bagdogra Airport (IXB)",
     description:
-      "Pickup and drop at Bagdogra Airport (IXB) with flight tracking and meet-and-greet at the arrival gate.",
+      "Meet-and-greet at the arrival gate with flight tracking — we wait when flights are delayed.",
   },
   {
-    title: "Railway Transfers",
+    title: "NJP Railway Station",
     description:
-      "NJP station pickups with platform-side meeting points — no haggling, no waiting.",
+      "Platform-side pickup with your driver's details shared in advance — no haggling, no waiting.",
   },
   {
-    title: "Sightseeing",
+    title: "Siliguri City & Hotels",
     description:
-      "Full-day and half-day sightseeing packages across Darjeeling, Gangtok, Kalimpong and the Dooars.",
+      "Door-to-door pickup from any hotel, home or address in and around Siliguri.",
   },
   {
-    title: "Custom Transfers",
+    title: "Multi-Day Tours",
     description:
-      "Multi-city itineraries, wedding logistics, corporate movement and group departures — planned end to end.",
+      "Keep the same car and driver for your whole trip — Darjeeling, Sikkim, Kalimpong, the Dooars and beyond.",
   },
 ];
 
@@ -81,8 +81,8 @@ export default function CarRentalsPage() {
       <section className="bg-card py-14 lg:py-16" aria-labelledby="transfers-heading">
         <Container>
           <SectionHeading
-            eyebrow="Beyond Rentals"
-            title="Transfers & Services"
+            eyebrow="Where We Pick You Up"
+            title="Transfers & Pickup Points"
             description="Every journey starts and ends with a transfer — we make sure it's the easiest part of your trip."
           />
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">

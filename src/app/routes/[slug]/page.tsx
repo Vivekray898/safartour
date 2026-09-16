@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MapPin, ArrowRight, Clock } from "lucide-react";
+import Link from "next/link";
 import Breadcrumbs from "@/components/seo/Breadcrumbs";
 import PageHero from "@/components/hero/PageHero";
 import VehicleGrid from "@/components/cars/VehicleGrid";
@@ -9,7 +10,12 @@ import FinalCTA from "@/components/sections/FinalCTA";
 import Container from "@/components/ui/Container";
 import EnquiryModal from "@/components/forms/EnquiryModal";
 import { buildMetadata } from "@/lib/seo";
-import { getRoute, routes } from "@/data/routes";
+import {
+  getRoute,
+  getRelatedRoutes,
+  getDestinationForRoute,
+  routes,
+} from "@/data/routes";
 import { vehicles as allVehicles } from "@/data/vehicles";
 import { getWhatsAppUrl, routeEnquiryMessage } from "@/lib/whatsapp";
 
@@ -43,6 +49,8 @@ export default async function RouteDetailPage({ params }: { params: Params }) {
   const recommended = route.recommendedVehicles
     .map((vSlug) => allVehicles.find((v) => v.slug === vSlug))
     .filter((v): v is NonNullable<typeof v> => Boolean(v));
+  const destinationSlug = getDestinationForRoute(route.slug);
+  const relatedRoutes = getRelatedRoutes(route.slug);
 
   return (
     <>
@@ -101,12 +109,25 @@ export default async function RouteDetailPage({ params }: { params: Params }) {
                 </div>
               </div>
               {route.distance || route.duration ? (
-                <p className="mt-4 text-sm text-muted">
-                  {route.distance ? <span className="font-semibold">Distance: </span>: null}
-                  {route.distance}
-                  {route.duration ? <span className="font-semibold"> · Duration: </span> : null}
-                  {route.duration}
-                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-muted">
+                  {route.distance ? (
+                    <span className="rounded-lg bg-card px-3 py-1.5 font-medium text-foreground">
+                      {route.distance}
+                    </span>
+                  ) : null}
+                  {route.duration ? (
+                    <span className="rounded-lg bg-card px-3 py-1.5 font-medium text-foreground">
+                      <Clock className="mr-1 inline h-3.5 w-3.5 text-primary" aria-hidden />
+                      approx. {route.duration.replace("~", "")} drive
+                    </span>
+                  ) : null}
+                  <span className="text-xs text-muted-foreground">
+                    Times vary with season and traffic — your quote includes the day&apos;s conditions.
+                  </span>
+                </div>
+              ) : null}
+              {route.journeyNote ? (
+                <p className="mt-3 text-sm leading-relaxed text-muted">{route.journeyNote}</p>
               ) : null}
             </section>
 
@@ -202,6 +223,62 @@ export default async function RouteDetailPage({ params }: { params: Params }) {
               </a>
             </div>
           </aside>
+        </div>
+      </Container>
+
+      {/* Make it a full trip */}
+      <Container className="py-12 lg:py-14">
+        <h2 className="font-display text-xl font-bold sm:text-2xl">
+          Make it a full trip
+        </h2>
+        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          {destinationSlug ? (
+            <Link
+              href={`/packages/${destinationSlug}`}
+              className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wider text-secondary">
+                Tours
+              </p>
+              <p className="mt-1.5 font-display text-base font-bold text-foreground">
+                {route.to} tour packages
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                Ready-made itineraries that start with this transfer.
+              </p>
+            </Link>
+          ) : null}
+          <Link
+            href="/car-rentals"
+            className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wider text-secondary">
+              Vehicles
+            </p>
+            <p className="mt-1.5 font-display text-base font-bold text-foreground">
+              Keep the car for your whole trip
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              Multi-day rentals with the same driver throughout.
+            </p>
+          </Link>
+          {relatedRoutes.map((r) => (
+            <Link
+              key={r.slug}
+              href={`/routes/${r.slug}`}
+              className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wider text-secondary">
+                Related transfer
+              </p>
+              <p className="mt-1.5 font-display text-base font-bold text-foreground">
+                {r.from} → {r.to}
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                {r.duration ? `approx. ${r.duration.replace("~", "")}` : "Private transfer"}
+              </p>
+            </Link>
+          ))}
         </div>
       </Container>
 

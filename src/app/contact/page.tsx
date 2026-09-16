@@ -168,7 +168,32 @@ export default function ContactPage() {
                 hours.
               </p>
               <div className="mt-6">
-                <EnquiryForm />
+                <EnquiryForm formType="contact" compact={false} />
+              </div>
+
+              {/* What happens next */}
+              <div className="mt-8 border-t border-border pt-6">
+                <h3 className="font-display text-sm font-bold uppercase tracking-wider text-muted">
+                  What happens after you enquire
+                </h3>
+                <ol className="mt-4 space-y-3">
+                  {[
+                    "We reply by phone or WhatsApp — usually within a few hours during business hours.",
+                    "We discuss your trip: dates, group size, pace, and budget.",
+                    "You receive a clear plan and quote — with no obligation.",
+                    "You confirm only when you're happy. Nothing is booked without your go-ahead.",
+                  ].map((step, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm text-muted">
+                      <span
+                        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary"
+                        aria-hidden
+                      >
+                        {i + 1}
+                      </span>
+                      {step}
+                    </li>
+                  ))}
+                </ol>
               </div>
             </div>
           </div>

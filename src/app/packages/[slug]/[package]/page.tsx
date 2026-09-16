@@ -16,6 +16,7 @@ import JsonLd from "@/components/seo/JsonLd";
 import { buildMetadata, touristTripJsonLd } from "@/lib/seo";
 import { getPackage, getRelatedPackages, packages } from "@/data/packages";
 import { getDestination } from "@/data/destinations";
+import { getRouteForDestination } from "@/data/routes";
 import { getWhatsAppUrl, packageEnquiryMessage } from "@/lib/whatsapp";
 
 type Params = Promise<{ slug: string; package: string }>;
@@ -54,6 +55,7 @@ export default async function PackageDetailPage({
 
   const destinationInfo = getDestination(destination);
   const related = getRelatedPackages(pkg);
+  const transferRoute = getRouteForDestination(destination);
 
   return (
     <>
@@ -107,6 +109,32 @@ export default async function PackageDetailPage({
                     className="rounded-full bg-primary/10 px-3.5 py-1.5 text-sm font-medium text-primary"
                   >
                     {h}
+                  </span>
+                ))}
+              </div>
+            </section>
+
+            {/* Places covered */}
+            <section aria-labelledby="places-covered">
+              <h2
+                id="places-covered"
+                className="font-display text-2xl font-bold sm:text-3xl"
+              >
+                Places Covered
+              </h2>
+              <p className="mt-4 text-sm text-muted">
+                Every stop this itinerary spends time at — derived from the
+                day-by-day plan below.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {Array.from(
+                  new Set(pkg.itinerary.map((d) => d.title.trim()))
+                ).map((place) => (
+                  <span
+                    key={place}
+                    className="rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium text-foreground"
+                  >
+                    {place}
                   </span>
                 ))}
               </div>
@@ -276,6 +304,13 @@ export default async function PackageDetailPage({
                 Transparent rates based on your travel season, group size, and hotel category.
               </p>
 
+              {pkg.bestFor ? (
+                <div className="mt-4 rounded-lg bg-secondary/5 px-3.5 py-3 text-xs leading-relaxed text-foreground">
+                  <span className="font-semibold text-secondary-dark">Suitable for: </span>
+                  {pkg.bestFor}
+                </div>
+              ) : null}
+
               <div className="mt-5 space-y-2 border-y border-border py-4 text-xs sm:text-sm text-foreground">
                 <div className="flex items-center justify-between">
                   <span className="text-muted">Vehicle</span>
@@ -324,6 +359,15 @@ export default async function PackageDetailPage({
                   </svg>
                   Chat on WhatsApp
                 </Link>
+
+                {transferRoute ? (
+                  <Link
+                    href={`/routes/${transferRoute.slug}`}
+                    className="block rounded-lg border border-border bg-background px-4 py-2.5 text-center text-sm font-medium text-foreground transition-colors hover:border-primary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  >
+                    Getting here? See the {transferRoute.from} → {transferRoute.to} transfer
+                  </Link>
+                ) : null}
               </div>
 
               <p className="mt-4 text-center text-xs text-muted-foreground">
