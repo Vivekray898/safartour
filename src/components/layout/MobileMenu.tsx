@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, X } from "lucide-react";
-import { nav } from "@/data/site";
-import Button from "@/components/ui/Button";
+import { useEffect, useRef } from "react";
+import { X, Phone, MessageSquare } from "lucide-react";
+import { nav, siteConfig } from "@/data/site";
+import { getWhatsAppUrl, generalEnquiryMessage } from "@/lib/whatsapp";
+import EnquiryModal from "@/components/forms/EnquiryModal";
 
 export default function MobileMenu({
   open,
@@ -15,7 +16,6 @@ export default function MobileMenu({
   onClose: () => void;
 }) {
   const pathname = usePathname();
-  const [packagesOpen, setPackagesOpen] = useState(true);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,9 +49,18 @@ export default function MobileMenu({
       className="fixed inset-0 z-[60] flex flex-col bg-card"
     >
       <div className="flex h-16 items-center justify-between border-b border-border px-4">
-        <span className="font-display text-lg font-bold">
-          Safar<span className="text-secondary">Tours</span>
-        </span>
+        <Link
+          href="/"
+          onClick={onClose}
+          className="flex items-center gap-2 font-display text-lg font-bold"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary font-display text-sm font-extrabold text-white">
+            S
+          </span>
+          <span>
+            Safar<span className="text-secondary">Tours</span>
+          </span>
+        </Link>
         <button
           onClick={onClose}
           aria-label="Close menu"
@@ -63,76 +72,30 @@ export default function MobileMenu({
 
       <nav
         aria-label="Mobile navigation"
-        className="flex-1 overflow-y-auto px-4 py-4"
+        className="flex-1 overflow-y-auto px-4 py-5"
       >
         <ul className="space-y-1">
-          {nav.map((item) =>
-            item.children ? (
-              <li key={item.label}>
-                <button
-                  onClick={() => setPackagesOpen((v) => !v)}
-                  aria-expanded={packagesOpen}
-                  className="flex w-full items-center justify-between rounded-lg px-3 py-3 text-base font-medium text-foreground hover:bg-foreground/5 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
-                >
-                  {item.label}
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform ${
-                      packagesOpen ? "rotate-180" : ""
-                    }`}
-                    aria-hidden
-                  />
-                </button>
-                {packagesOpen && (
-                  <ul className="ml-3 border-l border-border pl-2">
-                    {item.children.map((child) => (
-                      <li key={child.href}>
-                        <Link
-                          href={child.href}
-                          onClick={onClose}
-                          className={`block rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-primary/5 hover:text-primary ${
-                            pathname === child.href
-                              ? "font-medium text-primary"
-                              : "text-muted"
-                          }`}
-                        >
-                          {child.label}
-                        </Link>
-                      </li>
-                    ))}
-                    <li>
-                      <Link
-                        href={item.href}
-                        onClick={onClose}
-                        className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-primary hover:bg-primary/5"
-                      >
-                        View All Packages
-                      </Link>
-                    </li>
-                  </ul>
-                )}
-              </li>
-            ) : (
-              <li key={item.label}>
-                <Link
-                  href={item.href}
-                  onClick={onClose}
-                  className={`block rounded-lg px-3 py-3 text-base font-medium transition-colors hover:bg-foreground/5 ${
-                    pathname === item.href
-                      ? "text-primary"
-                      : "text-foreground"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              </li>
-            )
-          )}
+          {nav.map((item) => (
+            <li key={item.label}>
+              <Link
+                href={item.href}
+                onClick={onClose}
+                className={`block rounded-lg px-3.5 py-3 text-base font-medium transition-colors hover:bg-foreground/5 ${
+                  pathname === item.href
+                    ? "font-semibold text-primary"
+                    : "text-foreground"
+                }`}
+              >
+                {item.label}
+              </Link>
+            </li>
+          ))}
           <li>
             <Link
               href="/gallery"
               onClick={onClose}
-              className={`block rounded-lg px-3 py-3 text-base font-medium transition-colors hover:bg-foreground/5 ${
-                pathname === "/gallery" ? "text-primary" : "text-foreground"
+              className={`block rounded-lg px-3.5 py-3 text-base font-medium transition-colors hover:bg-foreground/5 ${
+                pathname === "/gallery" ? "font-semibold text-primary" : "text-foreground"
               }`}
             >
               Gallery
@@ -141,15 +104,34 @@ export default function MobileMenu({
         </ul>
 
         <div className="mt-6 border-t border-border pt-6">
-          <Button
-            href="/contact"
-            variant="primary"
-            size="lg"
-            className="w-full"
-          >
-            Book Now
-            <ChevronRight className="h-4 w-4" aria-hidden />
-          </Button>
+          <div onClick={onClose}>
+            <EnquiryModal
+              label="Plan My Trip"
+              title="Plan Your Trip with Safar Tours"
+              variant="primary"
+              size="lg"
+              className="w-full"
+            />
+          </div>
+
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <a
+              href={`tel:${siteConfig.phone}`}
+              className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card py-2.5 text-xs font-semibold text-foreground hover:bg-foreground/5"
+            >
+              <Phone className="h-4 w-4 text-primary" aria-hidden />
+              Call Us
+            </a>
+            <a
+              href={getWhatsAppUrl(generalEnquiryMessage())}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card py-2.5 text-xs font-semibold text-foreground hover:bg-foreground/5"
+            >
+              <MessageSquare className="h-4 w-4 text-[#25D366]" aria-hidden />
+              WhatsApp
+            </a>
+          </div>
         </div>
       </nav>
     </div>

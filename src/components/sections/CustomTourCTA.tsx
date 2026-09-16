@@ -1,23 +1,14 @@
 import Image from "next/image";
-import { Users, Heart, Tent, Briefcase, Route } from "lucide-react";
-import Button from "@/components/ui/Button";
 import Container from "@/components/ui/Container";
+import EnquiryModal from "@/components/forms/EnquiryModal";
 import { images } from "@/data/images";
-
-const tripTypes = [
-  { icon: Users, label: "Family Trips" },
-  { icon: Heart, label: "Honeymoon" },
-  { icon: Tent, label: "Friends' Adventures" },
-  { icon: Briefcase, label: "Corporate Retreats" },
-  { icon: Route, label: "Customised Itineraries" },
-];
 
 export default function CustomTourCTA() {
   return (
-    <section className="relative overflow-hidden py-16 md:py-20 lg:py-24">
+    <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24" aria-labelledby="custom-tour-heading">
       <Image
         src={images.customTour.src}
-        alt={images.customTour.alt}
+        alt="Mountain landscape in the Eastern Himalayas"
         fill
         sizes="100vw"
         className="object-cover"
@@ -25,28 +16,27 @@ export default function CustomTourCTA() {
       <div className="absolute inset-0 bg-primary-dark/85" aria-hidden />
       <Container className="relative">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Can&apos;t find the perfect package?
-          </h2>
-          <p className="mt-4 text-base leading-relaxed text-white/85 sm:text-lg">
-            Tell us what you want. We&apos;ll build a trip around your
-            schedule, budget and interests.
+          <p className="text-xs font-semibold uppercase tracking-wider text-secondary">
+            Custom Travel Planning
           </p>
-          <ul className="mt-8 flex flex-wrap justify-center gap-2.5">
-            {tripTypes.map(({ icon: Icon, label }) => (
-              <li
-                key={label}
-                className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm"
-              >
-                <Icon className="h-4 w-4 text-secondary" aria-hidden />
-                {label}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-9">
-            <Button href="/contact" variant="secondary" size="lg">
-              Plan My Trip
-            </Button>
+          <h2
+            id="custom-tour-heading"
+            className="mt-2 font-display text-2xl font-bold tracking-tight text-white sm:text-4xl"
+          >
+            Have something different in mind?
+          </h2>
+          <p className="mt-4 text-base leading-relaxed text-white/90 sm:text-lg">
+            Tell us where you want to go. We&apos;ll help you plan the journey around you —
+            your schedule, your family, and your budget.
+          </p>
+          <div className="mt-8 flex justify-center">
+            <EnquiryModal
+              label="Plan a Custom Trip"
+              title="Plan Your Custom Journey"
+              subtitle="Tell us where you'd like to travel. We'll put together an itinerary for you."
+              variant="secondary"
+              size="lg"
+            />
           </div>
         </div>
       </Container>

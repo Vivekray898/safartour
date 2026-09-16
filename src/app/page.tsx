@@ -1,19 +1,16 @@
 import Hero from "@/components/hero/Hero";
-import TripSearch from "@/components/hero/TripSearch";
-import Stats from "@/components/sections/Stats";
+import TrustIntro from "@/components/sections/TrustIntro";
 import PackageGrid from "@/components/packages/PackageGrid";
 import DestinationGrid from "@/components/destinations/DestinationGrid";
 import WhyChooseUs from "@/components/sections/WhyChooseUs";
 import CustomTourCTA from "@/components/sections/CustomTourCTA";
-import HowItWorks from "@/components/sections/HowItWorks";
+import HumanAssistance from "@/components/sections/HumanAssistance";
 import Testimonials from "@/components/sections/Testimonials";
 import FAQSection from "@/components/sections/FAQ";
 import FinalCTA from "@/components/sections/FinalCTA";
-import TrustStrip from "@/components/sections/TrustStrip";
 import Container from "@/components/ui/Container";
 import SectionHeading from "@/components/ui/SectionHeading";
 import VehicleGrid from "@/components/cars/VehicleGrid";
-import RouteCard from "@/components/cars/RouteCard";
 import GuideGrid from "@/components/guides/GuideGrid";
 import Button from "@/components/ui/Button";
 import JsonLd from "@/components/seo/JsonLd";
@@ -21,19 +18,21 @@ import { buildMetadata, organizationJsonLd } from "@/lib/seo";
 import { packages } from "@/data/packages";
 import { destinations } from "@/data/destinations";
 import { vehicles } from "@/data/vehicles";
-import { routes } from "@/data/routes";
 import { guides } from "@/data/guides";
 import { homeFaqs } from "@/data/faqs";
 
 export const metadata = buildMetadata({
   title: "Sikkim, Darjeeling & Northeast India Tour Packages",
   description:
-    "Safar Tours & Travels — tour packages, car rentals, airport & railway transfers and sightseeing across Sikkim, Darjeeling, Kalimpong, Dooars and Northeast India. Plan your Himalayan journey today.",
+    "Safar Tours & Travels — thoughtfully planned tour packages, car rentals, airport & railway transfers across Sikkim, Darjeeling, Kalimpong, Dooars and Northeast India.",
   path: "/",
 });
 
 export default function Home() {
-  const popularPackages = packages.slice(0, 6);
+  // Show 4 representative packages
+  const popularPackages = packages.slice(0, 4);
+
+  // 6 balanced destinations
   const featuredDestinations = destinations.filter((d) =>
     ["darjeeling", "sikkim", "kalimpong", "dooars", "meghalaya", "arunachal-pradesh"].includes(
       d.slug
@@ -44,128 +43,107 @@ export default function Home() {
     <>
       <JsonLd data={organizationJsonLd()} />
 
-      <main className="pb-20 lg:pb-0">
+      <main className="pb-16 lg:pb-0">
+        {/* 1. Hero */}
         <Hero />
 
-        {/* Overlapping trip search card */}
-        <div className="relative z-10 mx-auto -mt-16 w-full max-w-5xl px-4 sm:px-6 lg:-mt-20">
-          <TripSearch />
-        </div>
+        {/* 2. Trust / Introduction */}
+        <TrustIntro />
 
-        <TrustStrip />
-        <Stats />
-
-        {/* Explore Destinations — asymmetric grid */}
-        <section className="bg-card py-16 md:py-20 lg:py-24" aria-labelledby="destinations-heading">
+        {/* 3. Popular Destinations */}
+        <section className="py-14 sm:py-16 md:py-20" aria-labelledby="destinations-heading">
           <Container>
             <SectionHeading
               eyebrow="Where We Go"
-              title="Explore the Himalayas"
-              description="From misty hill stations to high-altitude mountain escapes, discover destinations worth travelling for."
+              title="Explore Popular Destinations"
+              description="From quiet hill stations and pine forests to high-altitude mountain valleys."
             />
-            <div className="mt-12">
+            <div className="mt-10">
               <DestinationGrid destinations={featuredDestinations} />
             </div>
           </Container>
         </section>
 
-        {/* Popular Packages */}
-        <section className="py-16 md:py-20 lg:py-24" aria-labelledby="packages-heading">
+        {/* 4. Popular Packages */}
+        <section className="border-t border-border bg-card py-14 sm:py-16 md:py-20" aria-labelledby="packages-heading">
           <Container>
             <SectionHeading
-              eyebrow="Handpicked Journeys"
-              title="Trips People Love"
-              description="Handpicked journeys designed for unforgettable mountain escapes — private vehicles, comfortable stays and flexible dates."
+              eyebrow="Popular Trips"
+              title="Featured Holiday Packages"
+              description="Complete journeys with private transportation, handpicked stays, and flexible pacing."
             />
-            <div className="mt-12">
+            <div className="mt-10">
               <PackageGrid packages={popularPackages} />
             </div>
             <div className="mt-10 text-center">
               <Button href="/packages" variant="outline" size="lg">
-                View All Packages
+                View All Packages &rarr;
               </Button>
             </div>
           </Container>
         </section>
 
+        {/* 5. Why Travel with Safar Tours */}
         <WhyChooseUs />
 
+        {/* 6. Custom Trips */}
         <CustomTourCTA />
 
-        {/* Car Rentals */}
-        <section className="py-16 md:py-20 lg:py-24" aria-labelledby="cars-heading">
+        {/* 7. Car Rentals */}
+        <section className="border-t border-border bg-card py-14 sm:py-16 md:py-20" aria-labelledby="cars-heading">
           <Container>
             <SectionHeading
-              eyebrow="Travel Your Way"
-              title="Your Journey, Your Ride"
-              description="Comfortable vehicles for airport transfers, sightseeing and long-distance journeys — always with an experienced hill driver."
+              eyebrow="Private Transportation"
+              title="Car Rentals & Transfers"
+              description="Well-maintained vehicles with experienced hill drivers for Bagdogra / NJP pickups and multi-day tours."
             />
-            <div className="mt-12">
-              <VehicleGrid vehicles={vehicles.slice(0, 6)} />
+            <div className="mt-10">
+              <VehicleGrid vehicles={vehicles.slice(0, 3)} />
             </div>
             <div className="mt-10 text-center">
               <Button href="/car-rentals" variant="outline" size="lg">
-                Explore Car Rentals
+                Explore All Car Rentals &rarr;
               </Button>
             </div>
           </Container>
         </section>
 
-        <HowItWorks />
-
-        {/* Popular Routes */}
-        <section className="bg-card py-16 md:py-20 lg:py-24" aria-labelledby="routes-heading">
+        {/* 8. Travel Guides */}
+        <section className="py-14 sm:py-16 md:py-20" aria-labelledby="guides-heading">
           <Container>
             <SectionHeading
-              eyebrow="Door to Door"
-              title="Popular Transfer Routes"
-              description="Private taxi transfers from Bagdogra Airport and NJP station to every major destination."
+              eyebrow="Travel Advice"
+              title="Destination Guides"
+              description="Practical advice from our local team — best travel seasons, routes, and mountain insights."
             />
-            <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {routes.slice(0, 6).map((r) => (
-                <RouteCard key={r.slug} route={r} />
-              ))}
-            </div>
-            <div className="mt-10 text-center">
-              <Button href="/routes" variant="outline" size="lg">
-                View All Routes
-              </Button>
-            </div>
-          </Container>
-        </section>
-
-        {/* Travel Guides */}
-        <section className="py-16 md:py-20 lg:py-24" aria-labelledby="guides-heading">
-          <Container>
-            <SectionHeading
-              eyebrow="Travel Inspiration"
-              title="Travel Guides"
-              description="Destination knowledge from a local team — best times, routes and practical tips."
-            />
-            <div className="mt-12">
+            <div className="mt-10">
               <GuideGrid guides={guides.slice(0, 3)} />
             </div>
             <div className="mt-10 text-center">
               <Button href="/guides" variant="outline" size="lg">
-                All Travel Guides
+                All Travel Guides &rarr;
               </Button>
             </div>
           </Container>
         </section>
 
+        {/* Human Contact Touchpoint */}
+        <HumanAssistance />
+
+        {/* 9. Testimonials */}
         <Testimonials />
 
+        {/* 10. FAQ */}
         <FAQSection
           faqs={homeFaqs}
           withSchema
-          eyebrow="Good to Know"
-          description="Quick answers about travelling with Safar Tours."
+          eyebrow="Common Questions"
+          title="Frequently Asked Questions"
+          description="Clear answers about booking, mountain travel, and our services."
         />
 
-        <FinalCTA
-          title="Where will you go next?"
-          description="Let's plan your Himalayan escape."
-        />
+        {/* 11. Final CTA */}
+        <FinalCTA />
       </main>
     </>
   );

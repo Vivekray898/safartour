@@ -1,53 +1,60 @@
 import Image from "next/image";
-import { ChevronRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { images } from "@/data/images";
 import Button from "@/components/ui/Button";
 import Container from "@/components/ui/Container";
-import { getWhatsAppUrl, generalEnquiryMessage } from "@/lib/whatsapp";
+import EnquiryModal from "@/components/forms/EnquiryModal";
 
 export default function Hero() {
   return (
-    <section className="relative flex min-h-[560px] items-center overflow-hidden pb-24 lg:min-h-[640px] lg:pb-28">
+    <section className="relative flex min-h-[580px] items-center overflow-hidden py-24 sm:py-28 lg:min-h-[660px] lg:py-32">
       <Image
         src={images.hero.src}
-        alt={images.hero.alt}
+        alt="Panoramic view of the Himalayan mountains and tea gardens"
         fill
         priority
         sizes="100vw"
-        className="object-cover"
+        className="object-cover object-center"
       />
+      {/* Calm, readable gradient overlay */}
       <div
-        className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-black/20"
+        className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/30"
         aria-hidden
       />
 
-      <Container className="relative pt-32 lg:pt-40">
+      <Container className="relative pt-16 sm:pt-20">
         <div className="max-w-2xl">
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-secondary">
-            Your Journey Begins Here
+          <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] text-secondary">
+            Safar Tours & Travels • Siliguri
           </p>
-          <h1 className="mt-4 font-display text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Your Journey.
-            <br />
-            Our Local Expertise.
+          <h1 className="mt-3 font-display text-3xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+            Explore the Northeast with confidence
           </h1>
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-white/85">
-            Discover Darjeeling, Sikkim, Kalimpong and the Northeast with
-            thoughtfully planned journeys, comfortable stays and reliable
-            local transportation.
+          <p className="mt-4 max-w-xl text-base sm:text-lg leading-relaxed text-white/90">
+            Thoughtfully planned journeys across Darjeeling, Sikkim, Kalimpong
+            and beyond. Private vehicles, comfortable stays, and real local
+            support throughout your trip.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+
+          <div className="mt-8 flex flex-wrap items-center gap-3.5">
             <Button href="/packages" variant="secondary" size="lg">
-              Explore Packages
-              <ChevronRight className="h-4 w-4" aria-hidden />
+              Explore Trips
+              <ArrowRight className="h-4 w-4" aria-hidden />
             </Button>
-            <Button
-              href={getWhatsAppUrl(generalEnquiryMessage())}
-              variant="whatsapp"
+            <EnquiryModal
+              label="Talk to a Travel Expert"
+              title="Plan Your Trip with Safar Tours"
+              subtitle="Tell us just a little about your trip. We'll help you plan the rest."
+              variant="outline"
               size="lg"
-            >
-              Plan My Trip
-            </Button>
+              className="border-white/40 bg-white/10 text-white hover:border-white hover:bg-white/20"
+            />
+          </div>
+
+          <div className="mt-9 border-t border-white/20 pt-5">
+            <p className="text-xs sm:text-sm font-medium tracking-wide text-white/80">
+              Local expertise &bull; Personal assistance &bull; Flexible trip planning
+            </p>
           </div>
         </div>
       </Container>

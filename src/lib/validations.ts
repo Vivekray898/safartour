@@ -21,10 +21,11 @@ export const enquirySchema = z.object({
   arrivalDate: z.union([z.literal(""), z.string()]).optional().default(""),
   departureDate: z.union([z.literal(""), z.string()]).optional().default(""),
   travellers: z
-    .number({ message: "Please enter the number of travellers." })
-    .int("Travellers must be a whole number.")
-    .positive("Travellers must be at least 1.")
-    .max(100, "For groups over 100, please contact us directly."),
+    .union([
+      z.string().trim().min(1, "Please select number of travellers."),
+      z.number().positive().transform((n) => String(n)),
+    ])
+    .default("2"),
   package: z.string().trim().max(200).optional().default(""),
   message: z
     .string()

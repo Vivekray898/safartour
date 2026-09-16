@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Breadcrumbs from "@/components/seo/Breadcrumbs";
 import PageHero from "@/components/hero/PageHero";
 import GuideGrid from "@/components/guides/GuideGrid";
@@ -37,12 +38,13 @@ export default function GuidesPage() {
         <SectionHeading eyebrow="Editor's Pick" title="Featured Guide" align="left" />
         <article className="mt-8 grid overflow-hidden rounded-xl border border-border bg-card shadow-sm lg:grid-cols-2">
           <div className="relative min-h-[260px] lg:min-h-[340px]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={featured.heroImage}
               alt={featured.heroImageAlt}
-              className="absolute inset-0 h-full w-full object-cover"
-              loading="eager"
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover"
             />
           </div>
           <div className="flex flex-col justify-center p-7 lg:p-10">

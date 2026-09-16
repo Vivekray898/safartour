@@ -53,40 +53,28 @@ export type Stat = (typeof stats)[number];
 
 export const whyChooseUs = [
   {
-    title: "Local Destination Knowledge",
+    title: "Local Hill Knowledge",
     description:
-      "Based in Siliguri, we know the hills, the roads and the seasons — and we plan routes that make the most of your time.",
+      "Based in Siliguri at the foot of the hills, we know road conditions, seasonal weather, and travel times from first-hand experience.",
     icon: "map",
   },
   {
-    title: "Reliable Transportation",
+    title: "Reliable Vehicles & Hill Drivers",
     description:
-      "Well-maintained vehicles with experienced hill drivers who know every bend from Bagdogra to North Sikkim.",
+      "All trips use well-maintained private cars driven by courteous local drivers who know mountain driving safely.",
     icon: "car",
   },
   {
-    title: "Customised Itineraries",
+    title: "Flexible, Tailored Planning",
     description:
-      "Every trip is built around your dates, budget and pace — no fixed departures, no crowded coaches.",
+      "Every journey is shaped around your schedule, family preferences, and budget. No rigid tours or rushed sightseeing.",
     icon: "route",
   },
   {
-    title: "Dedicated Travel Support",
+    title: "Direct & Reachable Support",
     description:
-      "A reachable team before and during your trip, with support on call throughout your journey.",
+      "From planning before you leave home to coordination on the road, our team is directly reachable on phone and WhatsApp.",
     icon: "headset",
-  },
-  {
-    title: "Comfortable Stays",
-    description:
-      "Handpicked hotels and homestays that match your budget and expectations — vetted, not guessed.",
-    icon: "bed",
-  },
-  {
-    title: "Transparent Planning",
-    description:
-      "Clear itineraries and clear quotes. You'll know exactly what is included before you confirm.",
-    icon: "fileText",
   },
 ] as const;
 
@@ -123,24 +111,11 @@ export const howItWorks = [
 
 export const nav: NavItem[] = [
   { label: "Home", href: "/" },
-  {
-    label: "Packages",
-    href: "/packages",
-    children: [
-      { label: "Sikkim", href: "/packages/sikkim" },
-      { label: "Darjeeling", href: "/packages/darjeeling" },
-      { label: "Kalimpong", href: "/packages/kalimpong" },
-      { label: "Sikkim + Darjeeling", href: "/packages/sikkim-darjeeling" },
-      {
-        label: "Darjeeling + Kalimpong",
-        href: "/packages/darjeeling-kalimpong",
-      },
-      { label: "Sikkim + Kalimpong", href: "/packages/sikkim-kalimpong" },
-    ],
-  },
+  { label: "Packages", href: "/packages" },
   { label: "Car Rentals", href: "/car-rentals" },
-  { label: "Guides", href: "/guides" },
-  { label: "About Us", href: "/about-us" },
+  { label: "Destinations", href: "/packages#destinations" },
+  { label: "Travel Guides", href: "/guides" },
+  { label: "About", href: "/about-us" },
   { label: "Contact", href: "/contact" },
 ];
 

@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { siteConfig } from "@/data/site";
 import Header from "@/components/layout/Header";
@@ -7,18 +6,6 @@ import Footer from "@/components/layout/Footer";
 import MobileCTABar from "@/components/layout/MobileCTABar";
 import FloatingWhatsApp from "@/components/layout/FloatingWhatsApp";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
-  variable: "--font-poppins",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -46,7 +33,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${poppins.variable}`}>
+    <html lang="en" className="scroll-smooth">
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         <Header />
         {children}

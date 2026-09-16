@@ -1,12 +1,10 @@
 import Breadcrumbs from "@/components/seo/Breadcrumbs";
 import PageHero from "@/components/hero/PageHero";
 import WhyChooseUs from "@/components/sections/WhyChooseUs";
-import HowItWorks from "@/components/sections/HowItWorks";
 import Testimonials from "@/components/sections/Testimonials";
 import FinalCTA from "@/components/sections/FinalCTA";
 import Container from "@/components/ui/Container";
 import SectionHeading from "@/components/ui/SectionHeading";
-import Button from "@/components/ui/Button";
 import { buildMetadata } from "@/lib/seo";
 import { images } from "@/data/images";
 import { siteConfig } from "@/data/site";
@@ -129,26 +127,7 @@ export default function AboutPage() {
         </Container>
       </section>
 
-      <HowItWorks />
-
       <Testimonials />
-
-      <section className="py-14 text-center lg:py-16">
-        <Container>
-          <SectionHeading
-            title="Let's Plan Your Journey"
-            description="Tell us where you're dreaming of — we'll handle the rest."
-          />
-          <div className="mt-8 flex justify-center gap-3">
-            <Button href="/contact" variant="primary" size="lg">
-              Contact Us
-            </Button>
-            <Button href="/packages" variant="outline" size="lg">
-              Browse Packages
-            </Button>
-          </div>
-        </Container>
-      </section>
 
       <FinalCTA />
     </>

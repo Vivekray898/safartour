@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ChevronDown, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import { nav, siteConfig } from "@/data/site";
 import MobileMenu from "@/components/layout/MobileMenu";
 import EnquiryModal from "@/components/forms/EnquiryModal";
@@ -63,97 +63,31 @@ export default function Header() {
             aria-label="Main navigation"
             className="hidden items-center gap-1 lg:flex"
           >
-            {nav.map((item) =>
-              item.children ? (
-                <div key={item.label} className="group relative">
-                  <button
-                    aria-expanded={false}
-                    aria-haspopup="true"
-                    className={`flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
-                      scrolled
-                        ? "text-foreground hover:text-primary"
-                        : "text-white/90 hover:text-white"
-                    }`}
-                  >
-                    {item.label}
-                    <ChevronDown className="h-4 w-4" aria-hidden />
-                  </button>
-                  <div
-                    className="invisible absolute left-1/2 top-full z-50 w-[26rem] -translate-x-1/2 translate-y-1 rounded-xl border border-border bg-card p-5 opacity-0 shadow-xl transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100"
-                    role="menu"
-                    aria-label={`${item.label} menu`}
-                  >
-                    <div className="grid grid-cols-2 gap-x-6">
-                      <div>
-                        <p className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Popular Destinations
-                        </p>
-                        {item.children.slice(0, 3).map((child) => (
-                          <Link
-                            key={child.href}
-                            href={child.href}
-                            role="menuitem"
-                            className="block rounded-lg px-2 py-2 text-sm text-foreground transition-colors hover:bg-primary/5 hover:text-primary focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
-                          >
-                            {child.label}
-                          </Link>
-                        ))}
-                      </div>
-                      <div>
-                        <p className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Popular Combinations
-                        </p>
-                        {item.children.slice(3).map((child) => (
-                          <Link
-                            key={child.href}
-                            href={child.href}
-                            role="menuitem"
-                            className="block rounded-lg px-2 py-2 text-sm text-foreground transition-colors hover:bg-primary/5 hover:text-primary focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
-                          >
-                            {child.label}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                    <div
-                      className="my-3 border-t border-border"
-                      role="presentation"
-                    />
-                    <Link
-                      href={item.href}
-                      role="menuitem"
-                      className="block rounded-lg bg-primary/5 px-3 py-2 text-center text-sm font-semibold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
-                    >
-                      View All Packages
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={`rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
-                    scrolled
-                      ? isActive(item.href)
-                        ? "text-primary"
-                        : "text-foreground hover:text-primary"
-                      : isActive(item.href)
-                        ? "text-white"
-                        : "text-white/90 hover:text-white"
-                  }`}
-                  aria-current={isActive(item.href) ? "page" : undefined}
-                >
-                  {item.label}
-                </Link>
-              )
-            )}
+            {nav.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
+                  scrolled
+                    ? isActive(item.href)
+                      ? "font-semibold text-primary"
+                      : "text-foreground hover:text-primary"
+                    : isActive(item.href)
+                      ? "font-semibold text-white"
+                      : "text-white/90 hover:text-white"
+                }`}
+                aria-current={isActive(item.href) ? "page" : undefined}
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
 
           <div className="flex items-center gap-2">
             <div className="hidden sm:block">
               <EnquiryModal
-                label="Plan Your Trip"
-                title="Plan Your Trip"
+                label="Plan My Trip"
+                title="Plan Your Trip with Safar Tours"
                 variant={scrolled ? "primary" : "secondary"}
                 size="md"
               />

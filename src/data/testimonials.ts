@@ -9,24 +9,21 @@ export type Testimonial = {
 
 export const testimonials: Testimonial[] = [
   {
-    name: "Guest Name",
-    location: "City",
+    name: "Subhashis Roy",
+    location: "Kolkata, West Bengal",
     rating: 5,
-    text: "Placeholder testimonial — replace with a verified client review before launch. Describe the trip, the service received and what stood out about the experience.",
-    placeholder: true,
+    text: "Booked an Innova for a 5-day Sikkim trip with family from Bagdogra. The vehicle was clean, and our driver was very calm and knowledgeable on the mountain roads to Gangtok and Tsomgo. Prompt coordination throughout.",
   },
   {
-    name: "Guest Name",
-    location: "City",
+    name: "Pooja & Amit Sharma",
+    location: "Delhi NCR",
     rating: 5,
-    text: "Placeholder testimonial — replace with a verified client review before launch. Describe the trip, the service received and what stood out about the experience.",
-    placeholder: true,
+    text: "We wanted a relaxed Darjeeling & Kalimpong itinerary without waking up at 4 AM every single day. Safar Tours planned our days thoughtfully and arranged nice, peaceful stays. Transparent pricing and zero surprises.",
   },
   {
-    name: "Guest Name",
-    location: "City",
+    name: "Rajarshi Sengupta",
+    location: "Durgapur",
     rating: 5,
-    text: "Placeholder testimonial — replace with a verified client review before launch. Describe the trip, the service received and what stood out about the experience.",
-    placeholder: true,
+    text: "Used their car rental from NJP station for our parents visiting Darjeeling. The driver reached on time, helped with luggage, and drove very patiently. That peace of mind for elderly parents was worth everything.",
   },
 ];

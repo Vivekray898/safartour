@@ -6,7 +6,8 @@ import EnquiryForm from "@/components/forms/EnquiryForm";
 
 export default function EnquiryModal({
   label,
-  title = "Request a Free Quote",
+  title = "Plan Your Trip with Safar Tours",
+  subtitle = "Tell us just a little about your trip. We'll help you plan the rest.",
   variant = "primary",
   size = "lg",
   className = "",
@@ -14,6 +15,7 @@ export default function EnquiryModal({
 }: {
   label: string;
   title?: string;
+  subtitle?: string;
   variant?: "primary" | "secondary" | "whatsapp" | "outline";
   size?: "md" | "lg";
   className?: string;
@@ -31,8 +33,8 @@ export default function EnquiryModal({
       "border border-border bg-transparent text-foreground hover:border-primary hover:text-primary focus-visible:outline-primary",
   } as const;
   const sizeClasses = {
-    md: "px-5 py-2.5 text-sm",
-    lg: "px-7 py-3.5 text-base",
+    md: "px-4 sm:px-5 py-2 sm:py-2.5 text-sm",
+    lg: "px-6 sm:px-7 py-3 sm:py-3.5 text-sm sm:text-base",
   } as const;
 
   return (
@@ -44,7 +46,7 @@ export default function EnquiryModal({
         {label}
       </button>
       <Modal open={open} onClose={() => setOpen(false)} labelledBy="enquiry-modal-title">
-        <div className="p-6 sm:p-8">
+        <div className="p-5 sm:p-7">
           <h2
             id="enquiry-modal-title"
             className="font-display text-xl font-bold text-foreground"
@@ -52,11 +54,14 @@ export default function EnquiryModal({
             {title}
           </h2>
           <p className="mt-1 text-sm text-muted">
-            Share a few details and our travel team will get back to you
-            shortly.
+            {subtitle}
           </p>
-          <div className="mt-6">
-            <EnquiryForm compact initialValues={initialValues} />
+          <div className="mt-5">
+            <EnquiryForm
+              compact
+              initialValues={initialValues}
+              onSuccess={() => {}}
+            />
           </div>
         </div>
       </Modal>
