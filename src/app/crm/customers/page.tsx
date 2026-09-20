@@ -40,14 +40,14 @@ export default async function CustomersPage({
   if (search) {
     query += ` AND (c.name LIKE ? OR c.phone LIKE ? OR c.email LIKE ?)`;
     const s = `%${search}%`;
-    params.push(s, s, s);
+    filterParams.push(s, s, s);
   }
 
   query += ' ORDER BY c.updated_at DESC LIMIT ? OFFSET ?';
   filterParams.push(limit, offset);
 
-  const customers = db.prepare(query).all(...filterParams);
-  const totalResult = db.prepare(countQuery).get() as { count: number };
+  const customers = await db.prepare(query).all(...filterParams);
+  const totalResult = await db.prepare(countQuery).get() as { count: number };
 
   return (
     <div className="space-y-6">

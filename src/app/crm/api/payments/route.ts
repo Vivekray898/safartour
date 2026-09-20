@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
-import { logPayment } from '@/lib/crm/activity';
+import { logPayment, logActivity } from '@/lib/crm/activity';
 import { CRM_PAYMENT_METHODS } from '@/config/crm';
 
 export async function GET(request: NextRequest) {

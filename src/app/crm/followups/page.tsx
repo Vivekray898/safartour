@@ -60,16 +60,16 @@ export default async function FollowupsPage({
   query += ' ORDER BY f.scheduled_date ASC LIMIT ? OFFSET ?';
   filterParams.push(limit, offset);
 
-  const followups = db.prepare(query).all(...filterParams);
+  const followups = await db.prepare(query).all(...filterParams);
 
   const today = new Date().toISOString().split('T')[0];
-  const overdueCount = db.prepare(`
+  const overdueCount = await db.prepare(`
     SELECT COUNT(*) as count FROM followups
     WHERE scheduled_date < ? AND status = 'pending'
     AND trip_id IN (SELECT id FROM trips WHERE archived = 0)
   `).get(today) as { count: number };
 
-  const todayCount = db.prepare(`
+  const todayCount = await db.prepare(`
     SELECT COUNT(*) as count FROM followups
     WHERE scheduled_date = ? AND status = 'pending'
     AND trip_id IN (SELECT id FROM trips WHERE archived = 0)

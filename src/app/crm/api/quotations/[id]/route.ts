@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession, requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
 import { logActivity, logQuotationAction } from '@/lib/crm/activity';
+import { generateQuotationReference } from '@/config/crm';
 
 export async function GET(
   request: NextRequest,
@@ -67,6 +68,9 @@ export async function PUT(
       trip_id: number;
       reference: string;
       status: string;
+      subtotal: number;
+      discount: number;
+      tax: number;
       final_amount: number;
       customer_id: number;
       trip_reference: string;

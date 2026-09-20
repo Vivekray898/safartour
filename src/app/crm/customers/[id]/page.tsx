@@ -15,7 +15,7 @@ export default async function CustomerPage({
   const { id } = await params;
   const db = getDb();
 
-  const customer = db.prepare(`
+  const customer = await db.prepare(`
     SELECT c.*,
       u.name as assigned_employee_name,
       (SELECT COUNT(*) FROM trips WHERE customer_id = c.id AND archived = 0) as active_trips,
@@ -62,7 +62,7 @@ export default async function CustomerPage({
     );
   }
 
-  const trips = db.prepare(`
+  const trips = await db.prepare(`
     SELECT t.id, t.reference, t.status, t.priority, t.lead_source,
       t.destination, t.start_date, t.end_date, t.total_pax,
       (SELECT COALESCE(SUM(final_amount), 0) FROM quotations q WHERE q.trip_id = t.id AND q.status = 'accepted') as quoted_amount,
@@ -74,7 +74,7 @@ export default async function CustomerPage({
     LIMIT 10
   `).all(id);
 
-  const activities = getActivitiesForCustomer(Number(id));
+  const activities = await getActivitiesForCustomer(Number(id));
 
   return (
     <div className="space-y-6">

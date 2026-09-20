@@ -16,18 +16,93 @@ pnpm build && pnpm start     # production
 pnpm lint                    # eslint
 ```
 
+## Requirements
+
+- **Node.js** 20+
+- **pnpm** 11.x (`packageManager` field pins it)
+- **Supabase** project (hosted PostgreSQL) — the CRM stores all data there. No MySQL, no SQLite, no local database server.
+
 ## Environment variables
 
 Copy `.env.example` → `.env.local` and set:
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
+| `DATABASE_URL` | yes (CRM) | Supabase PostgreSQL connection string (server-only). See **CRM & Database** below |
 | `NEXT_PUBLIC_SITE_URL` | yes (prod) | Canonical URLs, sitemap, JSON-LD |
 | `NEXT_PUBLIC_WHATSAPP_NUMBER` | yes | WhatsApp number, international format without `+` (e.g. `917001588581`) |
 | `NEXT_PUBLIC_GOOGLE_SHEETS_ENDPOINT` | recommended | Apps Script web-app URL where leads are stored. See **[GOOGLE-SHEETS-SETUP.md](./GOOGLE-SHEETS-SETUP.md)** |
 | `RESEND_API_KEY` / `ENQUIRY_TO_EMAIL` | optional | Email fallback when the Sheets write fails |
 
 Business details (phone numbers, address, hours, social links) live in **`src/data/site.ts`**; the config layer in **`src/config/site.ts`** wraps it with the env overrides above. Change a phone number in one file, it updates everywhere.
+
+---
+
+## CRM & Database (Supabase PostgreSQL)
+
+The internal CRM (`/crm`) is a Next.js App Router app whose persistence layer runs on **Supabase's hosted PostgreSQL** via the [`postgres`](https://github.com/porsager/postgres) driver. Architecture:
+
+```
+Next.js 16 (App Router)
+   → server components + route handlers  (src/app/crm/**)
+   → src/lib/crm/db.ts                  (thin async SQL wrapper)
+   → postgres driver over DATABASE_URL
+   → Supabase PostgreSQL
+```
+
+There is no local database file, no SQLite and no MySQL anywhere in the project.
+
+### 1. Create the Supabase project
+
+Create a project at [supabase.com](https://supabase.com), then open **Project Settings → Database → Connection string → URI** and copy the URI (replace `[YOUR-PASSWORD]`).
+
+### 2. Apply the schema & seed
+
+In the Supabase **SQL Editor**, run in order:
+
+1. `supabase/migrations/001_initial_schema.sql` — all tables (users, customers, trips/leads, quotations + items, payments, followups, tasks, activities, communications, documents, itinerary_days, hotels, suppliers, drivers, sessions, audit_logs), foreign keys, indexes and **Row Level Security enabled on every table**.
+2. `supabase/migrations/002_seed_data.sql` — demo dataset + the first users:
+
+   | Email | Password | Role |
+   | --- | --- | --- |
+   | `admin@safartour.crm` | `admin123` | admin |
+   | `rajesh@safartour.crm` | `admin123` | employee |
+
+   Change these passwords after first login (CRM → Settings → Users).
+
+### 3. Point the app at the database
+
+`.env.local`:
+
+```env
+DATABASE_URL=postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+```
+
+The variable is server-only (no `NEXT_PUBLIC_` prefix), so the connection string never reaches the browser bundle.
+
+### Security model
+
+- **RLS is enabled on all tables** with no public policies: browser-facing anon/authenticated keys cannot read or write CRM data.
+- The Next.js server is the only client; it enforces authentication (HTTP-only session cookies, `src/lib/crm/auth.ts`) and role/assignment permissions (admin vs employee, `src/lib/crm/permissions.ts`) per request.
+- If you later add Supabase Storage/Auth features, `SUPABASE_SERVICE_ROLE_KEY` must remain server-only too.
+
+### Local development & production build
+
+```bash
+pnpm dev      # development (marketing site + /crm)
+pnpm build    # production build — must pass with DATABASE_URL set
+pnpm lint     # eslint
+```
+
+### Deployment (Vercel)
+
+Set in the Vercel project → Settings → Environment Variables:
+
+- `DATABASE_URL` — the Supabase PostgreSQL URI (use the **transaction pooler** URI, port `6543`, for serverless friendlessness of idle connections; the app already runs with `prepare: false` for pooler compatibility)
+- All `NEXT_PUBLIC_*` variables from the table above
+- `CRM_SECRET_KEY`, `CRM_SITE_URL` as needed
+
+Everything persists in Supabase — Vercel's serverless filesystem is not used for data (uploaded documents go to `crm-documents/` on disk in dev; move to Supabase Storage for multi-region production use).
 
 ---
 

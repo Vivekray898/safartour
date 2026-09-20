@@ -88,6 +88,7 @@ export async function PUT(
     const task = await db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as {
       id: number;
       trip_id: number;
+      title: string;
       status: string;
     } | undefined;
 

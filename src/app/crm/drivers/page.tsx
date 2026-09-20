@@ -7,7 +7,7 @@ export default async function DriversPage() {
   const session = await requireRole(['admin']);
   const db = getDb();
 
-  const drivers = db.prepare(`
+  const drivers = await db.prepare(`
     SELECT * FROM drivers ORDER BY name ASC
   `).all();
 

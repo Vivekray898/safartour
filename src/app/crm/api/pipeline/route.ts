@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       WHERE t.archived = 0
     `;
 
-    const params: string[] = [];
+    const params: (string | number)[] = [];
 
     if (status) {
       query += ` AND t.status = ?`;

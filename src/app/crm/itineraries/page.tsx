@@ -7,7 +7,7 @@ export default async function ItinerariesPage() {
   const session = await requireAuth();
   const db = getDb();
 
-  const itineraries = db.prepare(`
+  const itineraries = await db.prepare(`
     SELECT i.*,
       t.reference as trip_reference,
       c.name as customer_name,
@@ -20,7 +20,7 @@ export default async function ItinerariesPage() {
     ORDER BY t.start_date ASC
   `).all();
 
-  const itineraryCounts = db.prepare(`
+  const itineraryCounts = await db.prepare(`
     SELECT trip_id, COUNT(*) as days FROM itinerary_days GROUP BY trip_id
   `).all() as Array<{ trip_id: number; days: number }>;
 

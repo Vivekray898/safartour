@@ -3,13 +3,13 @@ import { getDb } from '@/lib/crm/db';
 import { requireRole } from '@/lib/crm/auth';
 import { CRMStatusBadge } from '@/components/crm/common/CRMStatusBadge';
 import { formatCurrency } from '@/config/crm';
-import { format } from 'date-fns';
 import MetricCard from '@/components/crm/dashboard/MetricCard';
 import PipelineChart from '@/components/crm/dashboard/PipelineChart';
 import FollowUpWidget from '@/components/crm/dashboard/FollowUpWidget';
 import UpcomingTripsList from '@/components/crm/dashboard/UpcomingTripsList';
 import RevenueSummary from '@/components/crm/dashboard/RevenueSummary';
 import { Plus, Calendar, Phone, Send } from 'lucide-react';
+import Link from 'next/link';
 
 export default async function DashboardPage() {
   const session = await requireAuth();
@@ -17,38 +17,38 @@ export default async function DashboardPage() {
   const today = new Date().toISOString().split('T')[0];
 
   const stats = {
-    newLeads: db.prepare(`SELECT COUNT(*) as count FROM trips WHERE status = 'new' AND archived = 0`).get() as { count: number },
-    activeLeads: db.prepare(`
+    newLeads: await db.prepare(`SELECT COUNT(*) as count FROM trips WHERE status = 'new' AND archived = 0`).get() as { count: number },
+    activeLeads: await db.prepare(`
       SELECT COUNT(*) as count FROM trips
       WHERE status IN ('contacted', 'requirement_collected', 'quotation_preparing', 'quotation_sent', 'negotiation', 'booking_pending') AND archived = 0
     `).get() as { count: number },
-    followupsToday: db.prepare(`
+    followupsToday: await db.prepare(`
       SELECT COUNT(*) as count FROM followups
       WHERE scheduled_date = ? AND status = 'pending'
       AND trip_id IN (SELECT id FROM trips WHERE archived = 0)
     `).get(today) as { count: number },
-    quotationsSent: db.prepare(`
+    quotationsSent: await db.prepare(`
       SELECT COUNT(*) as count FROM quotations
       WHERE status IN ('sent', 'viewed', 'revised')
     `).get() as { count: number },
-    bookings: db.prepare(`
+    bookings: await db.prepare(`
       SELECT COUNT(*) as count FROM trips
       WHERE status IN ('booked', 'trip_ongoing') AND archived = 0
     `).get() as { count: number },
-    upcomingTrips: db.prepare(`
+    upcomingTrips: await db.prepare(`
       SELECT COUNT(*) as count FROM trips
       WHERE status IN ('booked', 'trip_ongoing') AND archived = 0 AND start_date >= ?
     `).get(today) as { count: number },
-    pendingPayments: db.prepare(`
+    pendingPayments: await db.prepare(`
       SELECT COALESCE(SUM(q.final_amount - (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.trip_id = q.trip_id)), 0) as amount
       FROM quotations q
       WHERE q.status = 'accepted'
       AND q.final_amount > (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.trip_id = q.trip_id)
     `).get() as { amount: number },
-    lostLeads: db.prepare(`SELECT COUNT(*) as count FROM trips WHERE status = 'lost' AND archived = 0`).get() as { count: number },
+    lostLeads: await db.prepare(`SELECT COUNT(*) as count FROM trips WHERE status = 'lost' AND archived = 0`).get() as { count: number },
   };
 
-  const pipeline = db.prepare(`
+  const pipeline = await db.prepare(`
     SELECT t.status, COUNT(*) as count, c.name as customer_name, t.reference, t.destination, t.start_date
     FROM trips t
     LEFT JOIN customers c ON t.customer_id = c.id
@@ -69,7 +69,7 @@ export default async function DashboardPage() {
     END
   `).all() as Array<{ status: string; count: number; customer_name: string | null; reference: string; destination: string | null; start_date: string | null }>;
 
-  const overdueFollowups = db.prepare(`
+  const overdueFollowups = await db.prepare(`
     SELECT f.id, f.scheduled_date, f.scheduled_time, f.followup_type, f.note,
       t.reference as trip_reference, c.name as customer_name, t.destination
     FROM followups f
@@ -91,7 +91,7 @@ export default async function DashboardPage() {
     destination: string | null;
   }>;
 
-  const todayFollowups = db.prepare(`
+  const todayFollowups = await db.prepare(`
     SELECT f.id, f.scheduled_time, f.followup_type, f.note,
       t.reference as trip_reference, c.name as customer_name, t.destination, t.status
     FROM followups f
@@ -112,7 +112,7 @@ export default async function DashboardPage() {
     status: string;
   }>;
 
-  const upcomingTrips = db.prepare(`
+  const upcomingTrips = await db.prepare(`
     SELECT t.id, t.reference, t.start_date, t.end_date, t.total_pax,
       c.name as customer_name, c.phone as customer_phone, t.destination,
       t.vehicle_type, t.status,
@@ -140,14 +140,14 @@ export default async function DashboardPage() {
   }>;
 
   const revenue = {
-    quoted: db.prepare(`SELECT COALESCE(SUM(final_amount), 0) as total FROM quotations WHERE status = 'accepted'`).get() as { total: number },
-    booked: db.prepare(`
+    quoted: await db.prepare(`SELECT COALESCE(SUM(final_amount), 0) as total FROM quotations WHERE status = 'accepted'`).get() as { total: number },
+    booked: await db.prepare(`
       SELECT COALESCE(SUM(final_amount), 0) as total FROM quotations
       WHERE status = 'accepted' AND trip_id IN (
         SELECT id FROM trips WHERE status IN ('booked', 'trip_ongoing') AND archived = 0
       )
     `).get() as { total: number },
-    collected: db.prepare(`
+    collected: await db.prepare(`
       SELECT COALESCE(SUM(p.amount), 0) as total FROM payments p
       JOIN trips t ON p.trip_id = t.id
       WHERE t.status IN ('booked', 'trip_ongoing', 'completed') AND t.archived = 0
@@ -163,13 +163,13 @@ export default async function DashboardPage() {
           <p className="text-sm text-gray-500">{new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
         <div className="flex items-center gap-2">
-          <a
+          <Link
             href="/crm/leads/new"
             className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
             <Plus className="w-4 h-4" />
             New Lead
-          </a>
+          </Link>
         </div>
       </div>
 

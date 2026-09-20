@@ -12,7 +12,7 @@
 
 -- ---------- users ----------
 INSERT INTO users (id, name, email, phone, password_hash, role, is_active) VALUES
-  (1, 'Admin User', 'admin@safartour.crm', '+919876543210',
+  (1, 'Admin User', 'enquiry@safartour.in', '+919876543210',
    '$2b$10$Xc7KV6v7wJcI9j1hjmj31uE4ho.ykzZj5w.XCoV1.orwedAIONuT6', 'admin', 1),
   (2, 'Rajesh Kumar', 'rajesh@safartour.crm', '+919876543211',
    '$2b$10$Xc7KV6v7wJcI9j1hjmj31uE4ho.ykzZj5w.XCoV1.orwedAIONuT6', 'employee', 1)

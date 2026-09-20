@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mail, ArrowRight, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Mail, ArrowRight, Loader2, CheckCircle, AlertCircle, UserRound } from 'lucide-react';
 import { CRM_DESTINATIONS, CRM_LEAD_SOURCES } from '@/config/crm';
 import { generateTripReference } from '@/config/crm';
 
@@ -21,6 +21,8 @@ export default function QuickLeadPage() {
     source: 'website',
     email: '',
     notes: '',
+    customerId: 0 as number,
+    existingCustomerId: 0 as number,
   });
 
   const handleChange = (field: string, value: string) => {
@@ -202,7 +204,7 @@ export default function QuickLeadPage() {
               disabled={loading || !formData.name || !formData.phone}
               className="w-full bg-green-700 hover:bg-green-800 disabled:bg-gray-300 text-white py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Prsc className="w-4 h-4" />}
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserRound className="w-4 h-4" />}
               Continue
               <ArrowRight className="w-4 h-4" />
             </button>

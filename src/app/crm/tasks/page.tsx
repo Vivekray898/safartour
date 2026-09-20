@@ -7,7 +7,7 @@ export default async function TasksPage() {
   const session = await requireAuth();
   const db = getDb();
 
-  const tasks = db.prepare(`
+  const tasks = await db.prepare(`
     SELECT t.*,
       tr.reference as trip_reference, tr.destination,
       c.name as customer_name,

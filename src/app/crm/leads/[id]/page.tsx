@@ -15,7 +15,7 @@ export default async function TripPage({
   const { id } = await params;
   const db = getDb();
 
-  const trip = db.prepare(`
+  const trip = await db.prepare(`
     SELECT t.*,
       c.name as customer_name, c.phone as customer_phone,
       c.email as customer_email, c.city as customer_city,
@@ -32,17 +32,17 @@ export default async function TripPage({
     return <div className="text-center py-12 text-gray-500">Trip not found</div>;
   }
 
-  const quotations = db.prepare(`
+  const quotations = await db.prepare(`
     SELECT q.reference, q.version, q.status, q.final_amount
     FROM quotations q WHERE q.trip_id = ? ORDER BY q.created_at DESC
   `).all(id);
 
-  const payments = db.prepare(`
+  const payments = await db.prepare(`
     SELECT amount, payment_date, payment_method, transaction_id
     FROM payments WHERE trip_id = ? ORDER BY payment_date DESC
   `).all(id);
 
-  const followups = db.prepare(`
+  const followups = await db.prepare(`
     SELECT scheduled_date, scheduled_time, followup_type, note, status
     FROM followups WHERE trip_id = ? ORDER BY scheduled_date DESC
   `).all(id);

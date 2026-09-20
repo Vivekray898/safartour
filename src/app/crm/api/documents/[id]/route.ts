@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession, requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
 import { readFile } from 'fs/promises';
+import { join } from 'path';
 
 export async function GET(
   request: NextRequest,

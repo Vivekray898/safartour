@@ -144,7 +144,7 @@ export async function PUT(
     }
 
     const oldStatus = trip.status;
-    let newStatus = body.status || oldStatus;
+    const newStatus = body.status || oldStatus;
 
     if (body.status !== undefined && body.status !== oldStatus) {
       if (body.status === 'lost' && !body.lost_reason) {

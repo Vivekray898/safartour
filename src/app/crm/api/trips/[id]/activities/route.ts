@@ -10,7 +10,7 @@ export async function GET(
     await requireAuth();
     const { id } = await params;
 
-    const activities = getActivitiesForTrip(Number(id), 100);
+    const activities = await getActivitiesForTrip(Number(id), 100);
 
     return NextResponse.json({ ok: true, activities });
   } catch (error) {

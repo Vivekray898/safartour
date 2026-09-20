@@ -146,7 +146,8 @@ function prepare(query: string): CrmStatement {
   const translated = translateQuery(query);
   const isInsert = /^\s*insert\b/i.test(query) && !/\breturning\b/i.test(query);
 
-  const execute = (sqlText: string, params: any[]) => getSql()(sqlText, params);
+  const execute = (sqlText: string, params: any[]): Promise<any[]> =>
+    (getSql().unsafe as (q: string, p?: unknown[]) => Promise<any[]>)(sqlText, params);
 
   return {
     async get(...args: any[]) {
@@ -177,5 +178,10 @@ function prepare(query: string): CrmStatement {
  *   await db.prepare('SELECT * FROM users WHERE id = ?').get(id);
  */
 export function getDb(): CrmDatabase {
-  return { prepare, exec: query => getSql().unsafe(query) };
+  return {
+    prepare,
+    exec: async (query: string) => {
+      await (getSql().unsafe as (q: string) => Promise<any[]>)(query);
+    },
+  };
 }

@@ -1,6 +1,6 @@
 import { getSession, requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
-import { CRM_STATUSES, CRM_PRIORITIES, CRMLeadSourceBadge, CRMStatusBadge } from '@/config/crm';
+import { CRMLeadSourceBadge, CRMStatusBadge } from '@/components/crm/common/CRMStatusBadge';
 import { formatCurrency } from '@/config/crm';
 import Link from 'next/link';
 import { Plus, Search, Filter, ArrowUpDown } from 'lucide-react';
@@ -16,6 +16,7 @@ interface LeadRow {
   total_pax: number | null;
   customer_name: string | null;
   customer_phone: string | null;
+  customer_email?: string | null;
   assigned_employee_name: string | null;
   quoted_amount: number | null;
   paid_amount: number | null;
@@ -85,7 +86,7 @@ export default async function LeadsPage({
   query += ' ORDER BY t.updated_at DESC LIMIT ? OFFSET ?';
   filterParams.push(limit, offset);
 
-  const leads = db.prepare(query).all(...filterParams) as LeadRow[];
+  const leads = await db.prepare(query).all(...filterParams) as LeadRow[];
 
   const countQuery = `
     SELECT COUNT(*) as count FROM trips t
@@ -93,7 +94,7 @@ export default async function LeadsPage({
     WHERE t.archived = 0
   `;
 
-  const totalResult = db.prepare(countQuery).get() as { count: number };
+  const totalResult = await db.prepare(countQuery).get() as { count: number };
 
   return (
     <div className="space-y-6">
@@ -119,10 +120,7 @@ export default async function LeadsPage({
               type="text"
               placeholder="Search leads..."
               defaultValue={searchFilter}
-              onSearch={(e: React.FormEvent<HTMLInputElement>) => {
-                const form = e.currentTarget.form;
-                if (form) form.submit();
-              }}
+              name="search"
               className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>

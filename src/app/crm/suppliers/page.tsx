@@ -7,7 +7,7 @@ export default async function SuppliersPage() {
   const session = await requireRole(['admin']);
   const db = getDb();
 
-  const suppliers = db.prepare(`
+  const suppliers = await db.prepare(`
     SELECT * FROM suppliers WHERE status = 'active' ORDER BY name ASC
   `).all();
 

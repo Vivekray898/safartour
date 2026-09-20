@@ -62,7 +62,7 @@ export async function logStatusChange(
   to: string,
   note?: string
 ): Promise<void> {
-  logActivity({
+  await logActivity({
     trip_id: tripId,
     customer_id: customerId,
     user,
@@ -90,7 +90,7 @@ export async function logQuotationAction(
     rejected: 'rejected',
   };
 
-  logActivity({
+  await logActivity({
     trip_id: tripId,
     customer_id: customerId,
     user,
@@ -109,7 +109,7 @@ export async function logPayment(
   transactionId?: string,
   note?: string
 ): Promise<void> {
-  logActivity({
+  await logActivity({
     trip_id: tripId,
     customer_id: customerId,
     user,
@@ -133,7 +133,7 @@ export async function logFollowUp(
     missed: 'missed',
   };
 
-  logActivity({
+  await logActivity({
     trip_id: tripId,
     customer_id: customerId,
     user,
@@ -153,7 +153,7 @@ export async function getActivitiesForTrip(tripId: number, limit = 50): Promise<
   metadata: Record<string, unknown> | null;
   created_at: string;
   user_name?: string | null;
-}> {
+}>> {
   const db = getDb();
   const rows = await db.prepare(`
     SELECT a.*,
@@ -192,7 +192,7 @@ export async function getActivitiesForCustomer(customerId: number, limit = 50): 
   created_at: string;
   user_name?: string | null;
   trip_reference?: string | null;
-}> {
+}>> {
   const db = getDb();
   const rows = await db.prepare(`
     SELECT a.*,

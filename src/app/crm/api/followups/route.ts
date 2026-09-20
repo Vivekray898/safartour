@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
-import { logFollowUp } from '@/lib/crm/activity';
+import { logFollowUp, logActivity } from '@/lib/crm/activity';
 
 export async function GET(request: NextRequest) {
   try {

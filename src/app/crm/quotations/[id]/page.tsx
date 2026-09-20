@@ -1,9 +1,10 @@
 import { getSession, requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
-import { CRM_QUOTATION_STATUSES, CRMStatusBadge } from '@/config/crm';
+import { CRM_QUOTATION_STATUSES } from '@/config/crm';
+import { CRMStatusBadge } from '@/components/crm/common/CRMStatusBadge';
 import { formatCurrency } from '@/config/crm';
 import Link from 'next/link';
-import { PDF, Download, Print, MessageSquare, Mail, ExternalLink } from 'lucide-react';
+import { FileText, Download, MessageSquare, Mail, ExternalLink } from 'lucide-react';
 
 export default async function QuotationPage({
   params,
@@ -14,7 +15,7 @@ export default async function QuotationPage({
   const { id } = await params;
   const db = getDb();
 
-  const quotation = db.prepare(`
+  const quotation = await db.prepare(`
     SELECT q.*,
       t.reference as trip_reference,
       t.destination as trip_destination,
@@ -36,11 +37,11 @@ export default async function QuotationPage({
     return <div className="text-center py-12 text-gray-500">Quotation not found</div>;
   }
 
-  const items = db.prepare(`
+  const items = await db.prepare(`
     SELECT * FROM quotation_items WHERE quotation_id = ? ORDER BY id ASC
   `).all(id);
 
-  const trip = db.prepare('SELECT * FROM trips WHERE id = ?').get(quotation.trip_id);
+  const trip = await db.prepare('SELECT * FROM trips WHERE id = ?').get(quotation.trip_id);
 
   return (
     <div className="space-y-6">
@@ -234,7 +235,7 @@ export default async function QuotationPage({
                 href={`/crm/api/quotations/${id}/pdf`}
                 className="flex items-center gap-2 bg-white border border-gray-200 hover:border-green-500 px-4 py-2 rounded-lg text-sm font-medium text-green-700 hover:text-green-800 transition-colors"
               >
-                <PDF className="w-4 h-4" />
+                <FileText className="w-4 h-4" />
                 Preview
               </a>
             </div>

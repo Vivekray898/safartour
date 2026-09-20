@@ -8,7 +8,7 @@ export default async function DocumentsPage() {
   const session = await requireAuth();
   const db = getDb();
 
-  const documents = db.prepare(`
+  const documents = await db.prepare(`
     SELECT d.*,
       t.reference as trip_reference,
       c.name as customer_name,

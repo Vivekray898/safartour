@@ -1,6 +1,7 @@
 import { getSession, requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
-import { CRM_QUOTATION_STATUSES, CRMStatusBadge } from '@/config/crm';
+import { CRM_QUOTATION_STATUSES } from '@/config/crm';
+import { CRMStatusBadge } from '@/components/crm/common/CRMStatusBadge';
 import { formatCurrency } from '@/config/crm';
 import Link from 'next/link';
 import { Plus, Search } from 'lucide-react';
@@ -36,19 +37,19 @@ export default async function QuotationsPage({
 
   if (tripId) {
     query += ` AND q.trip_id = ?`;
-    params.push(tripId);
+    filterParams.push(tripId);
   }
 
   if (statusFilter) {
     query += ` AND q.status = ?`;
-    params.push(statusFilter);
+    filterParams.push(statusFilter);
   }
 
   query += ' ORDER BY q.created_at DESC LIMIT ? OFFSET ?';
   filterParams.push(limit, offset);
 
-  const quotations = db.prepare(query).all(...filterParams);
-  const totalResult = db.prepare('SELECT COUNT(*) as count FROM quotations').get() as { count: number };
+  const quotations = await db.prepare(query).all(...filterParams);
+  const totalResult = await db.prepare('SELECT COUNT(*) as count FROM quotations').get() as { count: number };
 
   return (
     <div className="space-y-6">

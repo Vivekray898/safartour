@@ -1,6 +1,7 @@
 import { getSession, requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
-import { CRM_PAYMENT_METHODS, CRMPaymentMethodBadge } from '@/config/crm';
+import { CRM_PAYMENT_METHODS } from '@/config/crm';
+import { CRMPaymentMethodBadge } from '@/components/crm/common/CRMStatusBadge';
 import { formatCurrency } from '@/config/crm';
 import Link from 'next/link';
 import { Plus, Search } from 'lucide-react';
@@ -35,15 +36,15 @@ export default async function PaymentsPage({
 
   if (tripId) {
     query += ` AND p.trip_id = ?`;
-    params.push(tripId);
+    filterParams.push(tripId);
   }
 
   query += ' ORDER BY p.payment_date DESC LIMIT ? OFFSET ?';
   filterParams.push(limit, offset);
 
-  const payments = db.prepare(query).all(...filterParams);
+  const payments = await db.prepare(query).all(...filterParams);
 
-  const totalAllPayments = db.prepare(`
+  const totalAllPayments = await db.prepare(`
     SELECT COALESCE(SUM(p.amount), 0) as total
     FROM payments p
     JOIN trips t ON p.trip_id = t.id

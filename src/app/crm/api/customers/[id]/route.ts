@@ -159,7 +159,7 @@ export async function PUT(
     await db.prepare(`UPDATE customers SET ${updates.join(', ')} WHERE id = ?`).run(...values);
 
     await logActivity({
-      customer_id: id,
+      customer_id: Number(id),
       user: session,
       activity_type: 'customer_updated',
       description: 'Customer details updated',

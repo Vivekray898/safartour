@@ -37,23 +37,21 @@ export async function POST(
 
     if (!day_number) {
       return NextResponse.json({ error: 'Day number is required' }, { status: 400 });
-    }
-
-    const existingDay = db.prepare('SELECT * FROM itinerary_days WHERE trip_id = ? AND day_number = ?').get(id, day_number);
+    }    const existingDay = await db.prepare('SELECT * FROM itinerary_days WHERE trip_id = ? AND day_number = ?').get(id, day_number);
     const isUpdate = !!existingDay;
 
     if (isUpdate) {
-      db.prepare(`
+      await db.prepare(`
         UPDATE itinerary_days SET date = ?, location = ?, activities = ?, hotel = ?, meals = ?, transport = ?, notes = ?, created_at = datetime('now')
         WHERE id = ?
       `).run(date || null, location || null, JSON.stringify(activities || []), hotel || null, JSON.stringify(meals || []), transport || null, notes || null, (existingDay as { id: number }).id);
     } else {
-      const result = db.prepare(`
+      const result = await db.prepare(`
         INSERT INTO itinerary_days (trip_id, day_number, date, location, activities, hotel, meals, transport, notes)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(id, day_number, date || null, location || null, JSON.stringify(activities || []), hotel || null, JSON.stringify(meals || []), transport || null, notes || null);
 
-      logActivity({
+      await logActivity({
         trip_id: Number(id),
         user: session,
         activity_type: 'lead_created',
@@ -62,7 +60,7 @@ export async function POST(
       });
     }
 
-    const days = db.prepare('SELECT * FROM itinerary_days WHERE trip_id = ? ORDER BY day_number ASC').all(id);
+    const days = await db.prepare('SELECT * FROM itinerary_days WHERE trip_id = ? ORDER BY day_number ASC').all(id);
 
     return NextResponse.json({ ok: true, days });
   } catch (error) {
@@ -85,14 +83,14 @@ export async function DELETE(
       return NextResponse.json({ error: 'Day ID is required' }, { status: 400 });
     }
 
-    const day = db.prepare('SELECT * FROM itinerary_days WHERE id = ?').get(dayId) as { id: number; day_number: number } | undefined;
+    const day = await db.prepare('SELECT * FROM itinerary_days WHERE id = ?').get(dayId) as { id: number; day_number: number } | undefined;
     if (!day) {
       return NextResponse.json({ error: 'Day not found' }, { status: 404 });
     }
 
-    db.prepare('DELETE FROM itinerary_days WHERE id = ?').run(dayId);
+    await db.prepare('DELETE FROM itinerary_days WHERE id = ?').run(dayId);
 
-    db.prepare(`
+    await db.prepare(`
       UPDATE itinerary_days SET day_number = day_number - 1 WHERE trip_id = ? AND day_number > ?
     `).run(id, day.day_number);
 

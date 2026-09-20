@@ -35,8 +35,8 @@ export default async function HotelsPage({
   query += ' ORDER BY h.name ASC LIMIT ? OFFSET ?';
   filterParams.push(limit, offset);
 
-  const hotels = db.prepare(query).all(...filterParams);
-  const totalResult = db.prepare('SELECT COUNT(*) as count FROM hotels WHERE is_active = 1').get() as { count: number };
+  const hotels = await db.prepare(query).all(...filterParams);
+  const totalResult = await db.prepare('SELECT COUNT(*) as count FROM hotels WHERE is_active = 1').get() as { count: number };
 
   return (
     <div className="space-y-6">

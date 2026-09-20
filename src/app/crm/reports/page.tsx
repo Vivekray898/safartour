@@ -8,20 +8,20 @@ export default async function ReportsPage() {
   const db = getDb();
 
   const leadsReport = {
-    total: db.prepare(`SELECT COUNT(*) as count FROM trips WHERE archived = 0`).get() as { count: number },
-    byStatus: db.prepare(`SELECT status, COUNT(*) as count FROM trips WHERE archived = 0 GROUP BY status`).all() as Array<{ status: string; count: number }>,
-    bySource: db.prepare(`SELECT lead_source, COUNT(*) as count FROM trips WHERE archived = 0 GROUP BY lead_source ORDER BY count DESC`).all() as Array<{ lead_source: string; count: number }>,
-    byEmployee: db.prepare(`SELECT u.name, COUNT(*) as count FROM trips t LEFT JOIN users u ON t.assigned_employee_id = u.id WHERE t.archived = 0 GROUP BY t.assigned_employee_id`).all() as Array<{ name: string | null; count: number }>,
+    total: await db.prepare(`SELECT COUNT(*) as count FROM trips WHERE archived = 0`).get() as { count: number },
+    byStatus: await db.prepare(`SELECT status, COUNT(*) as count FROM trips WHERE archived = 0 GROUP BY status`).all() as Array<{ status: string; count: number }>,
+    bySource: await db.prepare(`SELECT lead_source, COUNT(*) as count FROM trips WHERE archived = 0 GROUP BY lead_source ORDER BY count DESC`).all() as Array<{ lead_source: string; count: number }>,
+    byEmployee: await db.prepare(`SELECT u.name, COUNT(*) as count FROM trips t LEFT JOIN users u ON t.assigned_employee_id = u.id WHERE t.archived = 0 GROUP BY t.assigned_employee_id`).all() as Array<{ name: string | null; count: number }>,
   };
 
   const bookingsReport = {
-    total: db.prepare(`SELECT COUNT(*) as count FROM trips WHERE status IN ('booked', 'trip_ongoing', 'completed') AND archived = 0`).get() as { count: number },
-    byMonth: db.prepare(`
+    total: await db.prepare(`SELECT COUNT(*) as count FROM trips WHERE status IN ('booked', 'trip_ongoing', 'completed') AND archived = 0`).get() as { count: number },
+    byMonth: await db.prepare(`
       SELECT strftime('%Y-%m', start_date) as month, COUNT(*) as count
       FROM trips WHERE status IN ('booked', 'trip_ongoing', 'completed') AND archived = 0 AND start_date IS NOT NULL
       GROUP BY month ORDER BY month DESC LIMIT 12
     `).all() as Array<{ month: string; count: number }>,
-    byDestination: db.prepare(`
+    byDestination: await db.prepare(`
       SELECT destination, COUNT(*) as count FROM trips
       WHERE status IN ('booked', 'trip_ongoing', 'completed') AND archived = 0 AND destination IS NOT NULL
       GROUP BY destination ORDER BY count DESC
@@ -29,19 +29,19 @@ export default async function ReportsPage() {
   };
 
   const revenueReport = {
-    quoted: db.prepare(`SELECT COALESCE(SUM(final_amount), 0) as total FROM quotations WHERE status = 'accepted'`).get() as { total: number },
-    booked: db.prepare(`
+    quoted: await db.prepare(`SELECT COALESCE(SUM(final_amount), 0) as total FROM quotations WHERE status = 'accepted'`).get() as { total: number },
+    booked: await db.prepare(`
       SELECT COALESCE(SUM(final_amount), 0) as total FROM quotations
       WHERE status = 'accepted' AND trip_id IN (
         SELECT id FROM trips WHERE status IN ('booked', 'trip_ongoing') AND archived = 0
       )
     `).get() as { total: number },
-    collected: db.prepare(`
+    collected: await db.prepare(`
       SELECT COALESCE(SUM(p.amount), 0) as total FROM payments p
       JOIN trips t ON p.trip_id = t.id
       WHERE t.status IN ('booked', 'trip_ongoing', 'completed') AND t.archived = 0
     `).get() as { total: number },
-    pending: db.prepare(`
+    pending: await db.prepare(`
       SELECT COALESCE(SUM(q.final_amount - (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.trip_id = q.trip_id)), 0) as total
       FROM quotations q WHERE q.status = 'accepted'
       AND q.final_amount > (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.trip_id = q.trip_id)
@@ -49,9 +49,9 @@ export default async function ReportsPage() {
   };
 
   const conversionReport = {
-    enquiries: db.prepare(`SELECT COUNT(*) as count FROM trips WHERE archived = 0`).get() as { count: number },
-    quotations: db.prepare(`SELECT COUNT(DISTINCT trip_id) as count FROM quotations WHERE status != 'draft'`).get() as { count: number },
-    bookings: db.prepare(`SELECT COUNT(*) as count FROM trips WHERE status IN ('booked', 'trip_ongoing', 'completed') AND archived = 0`).get() as { count: number },
+    enquiries: await db.prepare(`SELECT COUNT(*) as count FROM trips WHERE archived = 0`).get() as { count: number },
+    quotations: await db.prepare(`SELECT COUNT(DISTINCT trip_id) as count FROM quotations WHERE status != 'draft'`).get() as { count: number },
+    bookings: await db.prepare(`SELECT COUNT(*) as count FROM trips WHERE status IN ('booked', 'trip_ongoing', 'completed') AND archived = 0`).get() as { count: number },
   };
 
   return (
