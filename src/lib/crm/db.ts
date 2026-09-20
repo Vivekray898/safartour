@@ -173,6 +173,23 @@ function prepare(query: string): CrmStatement {
 }
 
 /**
+ * Generate the next sequential reference (e.g. ST-2026-00006) for a table.
+ * Uses the current max reference number rather than a per-year reset so
+ * references are unique for the table's lifetime; a UNIQUE constraint backs
+ * it up. Server-side only (it needs the database connection).
+ */
+export async function nextReference(
+  table: 'trips' | 'quotations',
+  prefix: 'ST' | 'QT'
+): Promise<string> {
+  const year = new Date().getFullYear();
+  const result = await prepare(
+    `SELECT COALESCE(MAX(NULLIF(substring(reference from '[0-9]+$'), '')::bigint), 0) AS maxnum FROM ${table}`
+  ).get() as { maxnum: number };
+  return `${prefix}-${year}-${String((result?.maxnum ?? 0) + 1).padStart(5, '0')}`;
+}
+
+/**
  * Get the CRM database handle. Same call shape as before:
  *   const db = getDb();
  *   await db.prepare('SELECT * FROM users WHERE id = ?').get(id);

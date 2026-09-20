@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mail, ArrowRight, Loader2, CheckCircle, AlertCircle, UserRound } from 'lucide-react';
 import { CRM_DESTINATIONS, CRM_LEAD_SOURCES } from '@/config/crm';
-import { generateTripReference } from '@/config/crm';
 
 export default function QuickLeadPage() {
   const router = useRouter();

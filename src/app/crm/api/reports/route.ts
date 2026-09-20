@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     if (reportType === 'bookings') {
       const [byMonth, byDestination, byTripType, totalBookings] = await Promise.all([
         db.prepare(`
-          SELECT to_char(start_date, 'YYYY-MM') as month, COUNT(*) as count
+          SELECT substring(start_date from 1 for 7) as month, COUNT(*) as count
           FROM trips
           WHERE status IN ('booked', 'trip_ongoing', 'completed') AND archived = 0
           AND start_date IS NOT NULL

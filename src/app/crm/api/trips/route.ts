@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, requireApiUser } from '@/lib/crm/auth';
-import { getDb } from '@/lib/crm/db';
+import { getDb, nextReference } from '@/lib/crm/db';
 import { logActivity } from '@/lib/crm/activity';
-import { generateTripReference, CRM_ACTIVE_STATUSES, calculatePax } from '@/config/crm';
+import { CRM_ACTIVE_STATUSES, calculatePax } from '@/config/crm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
 
-    const reference = generateTripReference();
+    const reference = await nextReference('trips', 'ST');
 
     const defaults = {
       adults: 0,

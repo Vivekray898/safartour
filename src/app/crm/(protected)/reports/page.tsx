@@ -11,13 +11,13 @@ export default async function ReportsPage() {
     total: await db.prepare(`SELECT COUNT(*) as count FROM trips WHERE archived = 0`).get() as { count: number },
     byStatus: await db.prepare(`SELECT status, COUNT(*) as count FROM trips WHERE archived = 0 GROUP BY status`).all() as Array<{ status: string; count: number }>,
     bySource: await db.prepare(`SELECT lead_source, COUNT(*) as count FROM trips WHERE archived = 0 GROUP BY lead_source ORDER BY count DESC`).all() as Array<{ lead_source: string; count: number }>,
-    byEmployee: await db.prepare(`SELECT u.name, COUNT(*) as count FROM trips t LEFT JOIN users u ON t.assigned_employee_id = u.id WHERE t.archived = 0 GROUP BY t.assigned_employee_id`).all() as Array<{ name: string | null; count: number }>,
+    byEmployee: await db.prepare(`SELECT u.name, COUNT(*) as count FROM trips t LEFT JOIN users u ON t.assigned_employee_id = u.id WHERE t.archived = 0 GROUP BY t.assigned_employee_id, u.name`).all() as Array<{ name: string | null; count: number }>,
   };
 
   const bookingsReport = {
     total: await db.prepare(`SELECT COUNT(*) as count FROM trips WHERE status IN ('booked', 'trip_ongoing', 'completed') AND archived = 0`).get() as { count: number },
     byMonth: await db.prepare(`
-      SELECT strftime('%Y-%m', start_date) as month, COUNT(*) as count
+      SELECT substring(start_date from 1 for 7) as month, COUNT(*) as count
       FROM trips WHERE status IN ('booked', 'trip_ongoing', 'completed') AND archived = 0 AND start_date IS NOT NULL
       GROUP BY month ORDER BY month DESC LIMIT 12
     `).all() as Array<{ month: string; count: number }>,

@@ -159,6 +159,7 @@ CREATE TABLE IF NOT EXISTS trips (
   referrer TEXT,
   received_at TEXT,
   created_by INTEGER REFERENCES users(id),
+  archived INTEGER NOT NULL DEFAULT 0,
   created_at TEXT DEFAULT (to_char((now() AT TIME ZONE 'utc'), 'YYYY-MM-DD HH24:MI:SS')),
   updated_at TEXT DEFAULT (to_char((now() AT TIME ZONE 'utc'), 'YYYY-MM-DD HH24:MI:SS'))
 );

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, requireApiUser } from '@/lib/crm/auth';
-import { getDb } from '@/lib/crm/db';
+import { getDb, nextReference } from '@/lib/crm/db';
 import { logActivity, logQuotationAction } from '@/lib/crm/activity';
-import { generateQuotationReference } from '@/config/crm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -86,7 +85,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 });
     }
 
-    const reference = generateQuotationReference();
+    const reference = await nextReference('quotations', 'QT');
     const existingQuotations = await db.prepare('SELECT COUNT(*) as count FROM quotations WHERE trip_id = ?').get(trip_id) as { count: number };
     const version = `V${existingQuotations.count + 1}`;
 
@@ -130,7 +129,7 @@ export async function POST(request: NextRequest) {
       `);
 
       for (const item of items) {
-        await insertItem.run(result.lastInsertRowid, item.category, item.description, item.details || null, item.quantity || 1, item.amount || 0);
+        await insertItem.run(result.lastInsertRowid, item.category || 'other', item.description, item.details || null, item.quantity || 1, item.amount || 0);
       }
     }
 

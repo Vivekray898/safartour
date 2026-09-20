@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, requireApiUser } from '@/lib/crm/auth';
-import { getDb } from '@/lib/crm/db';
+import { getDb, nextReference } from '@/lib/crm/db';
 import { logActivity, logQuotationAction } from '@/lib/crm/activity';
-import { generateQuotationReference } from '@/config/crm';
 
 export async function GET(
   request: NextRequest,
@@ -155,7 +154,7 @@ export async function PUT(
 
       if (body.status === 'revised') {
         const newVersion = `V${existingRevisions.count + 1}`;
-        const newRef = generateQuotationReference();
+        const newRef = await nextReference('quotations', 'QT');
 
         await db.prepare(`
           INSERT INTO quotations (reference, trip_id, version, status, quotation_date, valid_until, prepared_by, subtotal, discount, tax, final_amount, notes, terms)

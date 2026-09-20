@@ -49,7 +49,9 @@ export default async function DashboardPage() {
   };
 
   const pipeline = await db.prepare(`
-    SELECT t.status, COUNT(*) as count, c.name as customer_name, t.reference, t.destination, t.start_date
+    SELECT t.status, COUNT(*) as count,
+      MAX(c.name) as customer_name, MAX(t.reference) as reference,
+      MAX(t.destination) as destination, MAX(t.start_date) as start_date
     FROM trips t
     LEFT JOIN customers c ON t.customer_id = c.id
     WHERE t.archived = 0

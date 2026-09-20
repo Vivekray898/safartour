@@ -7,8 +7,12 @@ export default async function ItinerariesPage() {
   const session = await requireAuth();
   const db = getDb();
 
+  // One row per trip that has itinerary days (latest day row first).
+  // Postgres requires every selected column to be grouped or aggregated,
+  // so the SQLite-style `GROUP BY i.trip_id` becomes DISTINCT ON.
   const itineraries = await db.prepare(`
-    SELECT i.*,
+    SELECT DISTINCT ON (i.trip_id)
+      i.id, i.trip_id, i.created_at,
       t.reference as trip_reference,
       c.name as customer_name,
       t.destination,
@@ -16,8 +20,7 @@ export default async function ItinerariesPage() {
     FROM itinerary_days i
     JOIN trips t ON i.trip_id = t.id
     LEFT JOIN customers c ON t.customer_id = c.id
-    GROUP BY i.trip_id
-    ORDER BY t.start_date ASC
+    ORDER BY i.trip_id, i.created_at DESC
   `).all();
 
   const itineraryCounts = await db.prepare(`
