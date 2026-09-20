@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, requireAuth } from '@/lib/crm/auth';
+import { getSession, requireApiUser } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
 import { logActivity } from '@/lib/crm/activity';
 import { generateTripReference, CRM_ACTIVE_STATUSES, calculatePax } from '@/config/crm';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireAuth();
+    const session = await requireApiUser();
+    if (!session) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || '';
@@ -125,7 +128,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireAuth();
+    const session = await requireApiUser();
+    if (!session) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
     const body = await request.json();
     const db = getDb();
 

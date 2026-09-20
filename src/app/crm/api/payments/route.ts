@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, requireAuth } from '@/lib/crm/auth';
+import { getSession, requireApiUser } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
 import { logPayment, logActivity } from '@/lib/crm/activity';
 import { CRM_PAYMENT_METHODS } from '@/config/crm';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireAuth();
+    const session = await requireApiUser();
+    if (!session) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
     const searchParams = request.nextUrl.searchParams;
     const tripId = searchParams.get('tripId') || '';
     const page = parseInt(searchParams.get('page') || '1');
@@ -58,7 +61,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireAuth();
+    const session = await requireApiUser();
+    if (!session) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
     const body = await request.json();
     const db = getDb();
 

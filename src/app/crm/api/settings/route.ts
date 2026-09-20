@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, requireAuth, requireRole } from '@/lib/crm/auth';
+import { getSession, requireApiUser, requireAdminApi } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
 import { hashPassword } from '@/lib/crm/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireAuth();
+    const session = await requireApiUser();
+    if (!session) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
     const db = getDb();
 
     const settings = {
@@ -42,7 +45,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireRole(['admin']);
+    const session = await requireAdminApi();
+    if (!session) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     const body = await request.json();
     const db = getDb();
 

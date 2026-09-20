@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, requireAuth } from '@/lib/crm/auth';
+import { getSession, requireApiUser } from '@/lib/crm/auth';
 import { getActivitiesForTrip } from '@/lib/crm/activity';
 
 export async function GET(
@@ -7,7 +7,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAuth();
+    const session = await requireApiUser();
+    if (!session) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
     const { id } = await params;
 
     const activities = await getActivitiesForTrip(Number(id), 100);

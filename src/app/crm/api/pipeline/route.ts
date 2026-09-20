@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, requireAuth } from '@/lib/crm/auth';
+import { getSession, requireApiUser } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
 import { CRM_STATUSES } from '@/config/crm';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireAuth();
+    const session = await requireApiUser();
+    if (!session) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status') || '';
 

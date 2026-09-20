@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, requireAuth } from '@/lib/crm/auth';
+import { getSession, requireApiUser } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
 import { logActivity, logQuotationAction } from '@/lib/crm/activity';
 import { generateQuotationReference } from '@/config/crm';
@@ -9,7 +9,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireAuth();
+    const session = await requireApiUser();
+    if (!session) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
     const { id } = await params;
     const db = getDb();
 
@@ -52,7 +55,10 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireAuth();
+    const session = await requireApiUser();
+    if (!session) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
     const { id } = await params;
     const body = await request.json();
     const db = getDb();
@@ -223,7 +229,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireAuth();
+    const session = await requireApiUser();
+    if (!session) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
     const { id } = await params;
     const db = getDb();
 

@@ -82,10 +82,12 @@ export default function CRMsidebar({ user }: CRMsidebarProps) {
           </div>
         </div>
         <Link
-          href="/crm/api/auth/logout"
+          href="/crm/login"
           className="flex items-center gap-2 px-3 py-2 mt-1 text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
           onClick={() => {
-            fetch('/crm/api/auth/logout', { method: 'POST' }).then(() => window.location.href = '/crm/login');
+            fetch('/crm/api/auth/logout', { method: 'POST' })
+              .then(() => { window.location.href = '/crm/login'; })
+              .catch(() => { window.location.href = '/crm/login'; });
           }}
         >
           <LogOut className="w-4 h-4" />
