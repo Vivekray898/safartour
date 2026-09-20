@@ -38,9 +38,13 @@ export function generateSessionToken(): string {
 export async function createSession(userId: number): Promise<string> {
   const db = getDb();
   const token = generateSessionToken();
-  const expiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 86400000).toISOString();
+  // Same TEXT format the queries compare against ('YYYY-MM-DD HH:MM:SS').
+  const expiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 86400000)
+    .toISOString()
+    .slice(0, 19)
+    .replace('T', ' ');
 
-  db.prepare('INSERT INTO sessions (user_id, token, expires_at) VALUES (?, ?, ?)').run(userId, token, expiresAt);
+  await db.prepare('INSERT INTO sessions (user_id, token, expires_at) VALUES (?, ?, ?)').run(userId, token, expiresAt);
 
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
@@ -61,7 +65,7 @@ export async function getSession(): Promise<SessionUser | null> {
   if (!token) return null;
 
   const db = getDb();
-  const row = db.prepare(`
+  const row = await db.prepare(`
     SELECT s.user_id, u.name, u.email, u.role
     FROM sessions s
     JOIN users u ON s.user_id = u.id
@@ -85,7 +89,7 @@ export async function destroySession(): Promise<void> {
 
   if (token) {
     const db = getDb();
-    db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+    await db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
   }
 
   cookieStore.delete(SESSION_COOKIE);

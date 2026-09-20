@@ -13,7 +13,7 @@ export async function POST(
     const body = await request.json();
     const db = getDb();
 
-    const trip = db.prepare('SELECT * FROM trips WHERE id = ?').get(id) as {
+    const trip = await db.prepare('SELECT * FROM trips WHERE id = ?').get(id) as {
       id: number;
       customer_id: number;
       status: string;
@@ -33,14 +33,14 @@ export async function POST(
       return NextResponse.json({ error: 'Lost reason is required' }, { status: 400 });
     }
 
-    db.prepare(`
+    await db.prepare(`
       UPDATE trips SET status = ?, updated_at = datetime('now'),
         lost_reason = CASE WHEN ? = 'lost' THEN ? ELSE lost_reason END,
         lost_note = CASE WHEN ? = 'lost' THEN ? ELSE lost_note END
       WHERE id = ?
     `).run(status, status, lost_reason || null, status, note || null, id);
 
-    logStatusChange(Number(id), trip.customer_id, session, trip.status, status, note);
+    await logStatusChange(Number(id), trip.customer_id, session, trip.status, status, note);
 
     return NextResponse.json({
       ok: true,

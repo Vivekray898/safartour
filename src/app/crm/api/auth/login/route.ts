@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const db = getDb();
-    const user = db.prepare(`
+    const user = await db.prepare(`
       SELECT id, name, email, phone, password_hash, role, is_active
       FROM users
       WHERE email = ?

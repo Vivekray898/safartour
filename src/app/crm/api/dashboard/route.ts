@@ -11,27 +11,38 @@ export async function GET(request: NextRequest) {
     const today = new Date().toISOString().split('T')[0];
     const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
 
-    const stats = {
-      newLeads: db.prepare(`SELECT COUNT(*) as count FROM trips WHERE status = 'new' AND archived = 0`).get() as { count: number },
-      activeLeads: db.prepare(`SELECT COUNT(*) as count FROM trips WHERE status IN (${CRM_ACTIVE_STATUSES.map(() => '?').join(',')}) AND status != 'booked' AND status != 'completed' AND status != 'trip_ongoing' AND archived = 0`).get(...CRM_ACTIVE_STATUSES) as { count: number },
-      followupsToday: db.prepare(`SELECT COUNT(*) as count FROM followups WHERE scheduled_date = ? AND status = 'pending' AND trip_id IN (SELECT id FROM trips WHERE archived = 0)`).get(today) as { count: number },
-      quotationsSent: db.prepare(`SELECT COUNT(*) as count FROM quotations WHERE status IN ('sent', 'viewed', 'revised')`).get() as { count: number },
-      bookings: db.prepare(`SELECT COUNT(*) as count FROM trips WHERE status IN ('booked', 'trip_ongoing') AND archived = 0`).get() as { count: number },
-      upcomingTrips: db.prepare(`
+    const [newLeads, activeLeads, followupsTodayCount, quotationsSent, bookings, upcomingTripsCount, pendingPayments, lostLeads] = await Promise.all([
+      db.prepare(`SELECT COUNT(*) as count FROM trips WHERE status = 'new' AND archived = 0`).get(),
+      db.prepare(`SELECT COUNT(*) as count FROM trips WHERE status IN (${CRM_ACTIVE_STATUSES.map(() => '?').join(',')}) AND status != 'booked' AND status != 'completed' AND status != 'trip_ongoing' AND archived = 0`).all(...CRM_ACTIVE_STATUSES).then(rows => rows[0]),
+      db.prepare(`SELECT COUNT(*) as count FROM followups WHERE scheduled_date = ? AND status = 'pending' AND trip_id IN (SELECT id FROM trips WHERE archived = 0)`).get(today),
+      db.prepare(`SELECT COUNT(*) as count FROM quotations WHERE status IN ('sent', 'viewed', 'revised')`).get(),
+      db.prepare(`SELECT COUNT(*) as count FROM trips WHERE status IN ('booked', 'trip_ongoing') AND archived = 0`).get(),
+      db.prepare(`
         SELECT COUNT(*) as count FROM trips
         WHERE status IN ('booked', 'trip_ongoing') AND archived = 0
         AND start_date >= ?
-      `).get(today) as { count: number },
-      pendingPayments: db.prepare(`
+      `).get(today),
+      db.prepare(`
         SELECT COALESCE(SUM(q.final_amount - (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.trip_id = q.trip_id)), 0) as amount
         FROM quotations q
         WHERE q.status = 'accepted'
         AND q.final_amount > (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.trip_id = q.trip_id)
-      `).get() as { amount: number },
-      lostLeads: db.prepare(`SELECT COUNT(*) as count FROM trips WHERE status = 'lost' AND archived = 0`).get() as { count: number },
+      `).get(),
+      db.prepare(`SELECT COUNT(*) as count FROM trips WHERE status = 'lost' AND archived = 0`).get(),
+    ]) as [{ count: number }, { count: number }, { count: number }, { count: number }, { count: number }, { count: number }, { amount: number }, { count: number }];
+
+    const stats = {
+      newLeads,
+      activeLeads,
+      followupsToday: followupsTodayCount,
+      quotationsSent,
+      bookings,
+      upcomingTrips: upcomingTripsCount,
+      pendingPayments,
+      lostLeads,
     };
 
-    const pipeline = db.prepare(`
+    const pipeline = await db.prepare(`
       SELECT status, COUNT(*) as count
       FROM trips
       WHERE archived = 0
@@ -51,29 +62,35 @@ export async function GET(request: NextRequest) {
       END
     `).all() as Array<{ status: string; count: number }>;
 
-    const followups = {
-      overdue: db.prepare(`
+    const [followupOverdue, followupToday, followupUpcoming] = await Promise.all([
+      db.prepare(`
         SELECT COUNT(*) as count FROM followups
         WHERE status = 'pending'
         AND scheduled_date < ?
         AND trip_id IN (SELECT id FROM trips WHERE archived = 0)
-      `).get(today) as { count: number },
-      today: db.prepare(`
+      `).get(today),
+      db.prepare(`
         SELECT COUNT(*) as count FROM followups
         WHERE scheduled_date = ?
         AND status = 'pending'
         AND trip_id IN (SELECT id FROM trips WHERE archived = 0)
-      `).get(today) as { count: number },
-      upcoming: db.prepare(`
+      `).get(today),
+      db.prepare(`
         SELECT COUNT(*) as count FROM followups
         WHERE scheduled_date > ?
         AND scheduled_date <= ?
         AND status = 'pending'
         AND trip_id IN (SELECT id FROM trips WHERE archived = 0)
-      `).get(today, tomorrow) as { count: number },
+      `).get(today, tomorrow),
+    ]) as [{ count: number }, { count: number }, { count: number }];
+
+    const followups = {
+      overdue: followupOverdue,
+      today: followupToday,
+      upcoming: followupUpcoming,
     };
 
-    const todayFollowups = db.prepare(`
+    const todayFollowups = await db.prepare(`
       SELECT f.*, t.reference as trip_reference, c.name as customer_name, t.destination
       FROM followups f
       JOIN trips t ON f.trip_id = t.id
@@ -96,7 +113,7 @@ export async function GET(request: NextRequest) {
       destination: string | null;
     }>;
 
-    const overdueFollowups = db.prepare(`
+    const overdueFollowups = await db.prepare(`
       SELECT f.*, t.reference as trip_reference, c.name as customer_name, t.destination
       FROM followups f
       JOIN trips t ON f.trip_id = t.id
@@ -120,7 +137,7 @@ export async function GET(request: NextRequest) {
       destination: string | null;
     }>;
 
-    const upcomingTrips = db.prepare(`
+    const upcomingTrips = await db.prepare(`
       SELECT t.id, t.reference, t.start_date, t.end_date,
         c.name as customer_name, c.phone as customer_phone,
         t.destination, t.total_pax,
@@ -148,24 +165,30 @@ export async function GET(request: NextRequest) {
       paid_amount: number | null;
     }>;
 
-    const revenue = {
-      quoted: db.prepare(`
+    const [revQuoted, revBooked, revCollected] = await Promise.all([
+      db.prepare(`
         SELECT COALESCE(SUM(final_amount), 0) as total
         FROM quotations q
         WHERE q.status = 'accepted'
-      `).get() as { total: number },
-      booked: db.prepare(`
+      `).get(),
+      db.prepare(`
         SELECT COALESCE(SUM(final_amount), 0) as total
         FROM quotations q
         WHERE q.status = 'accepted'
         AND q.trip_id IN (SELECT id FROM trips WHERE status IN ('booked', 'trip_ongoing') AND archived = 0)
-      `).get() as { total: number },
-      collected: db.prepare(`
+      `).get(),
+      db.prepare(`
         SELECT COALESCE(SUM(p.amount), 0) as total
         FROM payments p
         JOIN trips t ON p.trip_id = t.id
         WHERE t.status IN ('booked', 'trip_ongoing', 'completed') AND t.archived = 0
-      `).get() as { total: number },
+      `).get(),
+    ]) as [{ total: number }, { total: number }, { total: number }];
+
+    const revenue = {
+      quoted: revQuoted,
+      booked: revBooked,
+      collected: revCollected,
       pending: stats.pendingPayments.amount,
     };
 

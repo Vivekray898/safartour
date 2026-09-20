@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
 
     const db = getDb();
+    const offset = (page - 1) * limit;
     
     let query = `SELECT c.*, u.name as assigned_employee_name FROM customers c LEFT JOIN users u ON c.assigned_employee_id = u.id WHERE c.archived = 0`;
     const filterParams: (string | number)[] = [];
@@ -25,8 +26,8 @@ export async function GET(request: NextRequest) {
     query += ' ORDER BY c.updated_at DESC LIMIT ? OFFSET ?';
     filterParams.push(limit, offset);
 
-    const customers = db.prepare(query).all(...filterParams);
-    const totalResult = db.prepare('SELECT COUNT(*) as count FROM customers WHERE archived = 0').get() as { count: number };
+    const customers = await db.prepare(query).all(...filterParams);
+    const totalResult = await db.prepare('SELECT COUNT(*) as count FROM customers WHERE archived = 0').get() as { count: number };
 
     return NextResponse.json({ ok: true, customers, pagination: { page, limit, total: totalResult.count } });
   } catch (error) {
@@ -47,10 +48,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (existing_customer_id) {
-      const existing = db.prepare('SELECT * FROM customers WHERE id = ?').get(existing_customer_id);
+      const existing = await db.prepare('SELECT * FROM customers WHERE id = ?').get(existing_customer_id);
       if (!existing) return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
 
-      db.prepare(`UPDATE customers SET name=?, phone=?, whatsapp=?, email=?, city=?, alt_phone=?, preferred_contact=?, company=?, company_contact_person=?, assigned_employee_id=?, updated_at=datetime('now'), is_repeat_customer=1 WHERE id=?`).run(
+      await db.prepare(`UPDATE customers SET name=?, phone=?, whatsapp=?, email=?, city=?, alt_phone=?, preferred_contact=?, company=?, company_contact_person=?, assigned_employee_id=?, updated_at=datetime('now'), is_repeat_customer=1 WHERE id=?`).run(
         name || (existing as { name: string }).name,
         phone || (existing as { phone: string }).phone,
         whatsapp || (existing as { phone: string }).phone,
@@ -64,21 +65,21 @@ export async function POST(request: NextRequest) {
         existing_customer_id
       );
 
-      logActivity({ customer_id: existing_customer_id, user: session, activity_type: 'customer_updated', description: 'Customer details updated' });
+      await logActivity({ customer_id: existing_customer_id, user: session, activity_type: 'customer_updated', description: 'Customer details updated' });
 
       return NextResponse.json({ ok: true, customer: { id: existing_customer_id, name, phone, whatsapp, email, city, alt_phone, preferred_contact, company, company_contact_person, assigned_employee_id, is_repeat_customer: 1 } });
     }
 
-    const existingPhone = db.prepare('SELECT id FROM customers WHERE phone = ? AND archived = 0').get(phone);
+    const existingPhone = await db.prepare('SELECT id FROM customers WHERE phone = ? AND archived = 0').get(phone);
     if (existingPhone) {
       return NextResponse.json({ ok: false, duplicate: true, duplicate_phone: (existingPhone as { id: number }).id, message: 'Customer with this phone exists' });
     }
 
-    const result = db.prepare(`INSERT INTO customers (name, phone, whatsapp, email, city, alt_phone, preferred_contact, company, company_contact_person, assigned_employee_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+    const result = await db.prepare(`INSERT INTO customers (name, phone, whatsapp, email, city, alt_phone, preferred_contact, company, company_contact_person, assigned_employee_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
       name, phone, whatsapp || phone, email || null, city || null, alt_phone || null, preferred_contact || null, company || null, company_contact_person || null, assigned_employee_id || null
     );
 
-    logActivity({ customer_id: result.lastInsertRowid, user: session, activity_type: 'customer_created', description: `Customer created: ${name}` });
+    await logActivity({ customer_id: Number(result.lastInsertRowid), user: session, activity_type: 'customer_created', description: `Customer created: ${name}` });
 
     return NextResponse.json({ ok: true, customer: { id: result.lastInsertRowid, name, phone, whatsapp: whatsapp || phone } });
   } catch (error) {

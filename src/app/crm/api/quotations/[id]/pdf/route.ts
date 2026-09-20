@@ -12,7 +12,7 @@ export async function GET(
     const { id } = await params;
     const db = getDb();
 
-    const quotation = db.prepare(`
+    const quotation = await db.prepare(`
       SELECT q.*,
         t.reference as trip_reference,
         t.destination as trip_destination,
@@ -59,7 +59,7 @@ export async function GET(
       return NextResponse.json({ error: 'Quotation not found' }, { status: 404 });
     }
 
-    const items = db.prepare(`
+    const items = await db.prepare(`
       SELECT * FROM quotation_items WHERE quotation_id = ? ORDER BY id ASC
     `).all(id);
 

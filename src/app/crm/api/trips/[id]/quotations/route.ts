@@ -11,7 +11,7 @@ export async function GET(
     const { id } = await params;
     const db = getDb();
 
-    const quotations = db.prepare(`
+    const quotations = await db.prepare(`
       SELECT q.*,
         u.name as prepared_by_name,
         (SELECT COUNT(*) FROM quotation_items qi WHERE qi.quotation_id = q.id) as items_count

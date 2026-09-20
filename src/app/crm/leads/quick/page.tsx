@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Prsc, ArrowRight, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Mail, ArrowRight, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { CRM_DESTINATIONS, CRM_LEAD_SOURCES } from '@/config/crm';
 import { generateTripReference } from '@/config/crm';
 

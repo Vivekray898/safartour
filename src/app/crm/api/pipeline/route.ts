@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     query += ' ORDER BY t.updated_at DESC LIMIT 100';
 
-    const trips = db.prepare(query).all(...params);
+    const trips = await db.prepare(query).all(...params);
 
     const pipelineData = CRM_STATUSES.map(s => {
       const count = trips.filter((t: { status: string }) => t.status === s.value).length;

@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     query += ` LIMIT ? OFFSET ?`;
     params.push(limit, offset);
 
-    const quotations = db.prepare(query).all(...params);
+    const quotations = await db.prepare(query).all(...params);
 
     return NextResponse.json({
       ok: true,
@@ -75,13 +75,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Trip ID is required' }, { status: 400 });
     }
 
-    const trip = db.prepare('SELECT * FROM trips WHERE id = ? AND archived = 0').get(trip_id);
+    const trip = await db.prepare('SELECT * FROM trips WHERE id = ? AND archived = 0').get(trip_id);
     if (!trip) {
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 });
     }
 
     const reference = generateQuotationReference();
-    const existingQuotations = db.prepare('SELECT COUNT(*) as count FROM quotations WHERE trip_id = ?').get(trip_id) as { count: number };
+    const existingQuotations = await db.prepare('SELECT COUNT(*) as count FROM quotations WHERE trip_id = ?').get(trip_id) as { count: number };
     const version = `V${existingQuotations.count + 1}`;
 
     let subtotal = 0;
@@ -93,12 +93,12 @@ export async function POST(request: NextRequest) {
 
     const final_amount = Math.max(0, subtotal - discount + tax);
 
-    const result = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO quotations (reference, trip_id, version, status, quotation_date, valid_until, prepared_by, subtotal, discount, tax, final_amount, notes, terms)
       VALUES (?, ?, ?, 'draft', datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(reference, trip_id, version, valid_until || null, session.id, subtotal, discount, tax, final_amount, notes || null, terms || null);
 
-    logQuotationAction(
+    await logQuotationAction(
       Number(trip_id),
       (trip as { customer_id: number }).customer_id,
       session,
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       notes
     );
 
-    logActivity({
+    await logActivity({
       trip_id: Number(trip_id),
       customer_id: (trip as { customer_id: number }).customer_id,
       user: session,
@@ -118,17 +118,17 @@ export async function POST(request: NextRequest) {
     });
 
     if (items && items.length > 0) {
-      const insertItem = db.prepare(`
+      const insertItem = await db.prepare(`
         INSERT INTO quotation_items (quotation_id, category, description, details, quantity, amount)
         VALUES (?, ?, ?, ?, ?, ?)
       `);
 
       for (const item of items) {
-        insertItem.run(result.lastInsertRowid, item.category, item.description, item.details || null, item.quantity || 1, item.amount || 0);
+        await insertItem.run(result.lastInsertRowid, item.category, item.description, item.details || null, item.quantity || 1, item.amount || 0);
       }
     }
 
-    const quotation = db.prepare(`
+    const quotation = await db.prepare(`
       SELECT q.*,
         t.reference as trip_reference,
         c.name as customer_name,

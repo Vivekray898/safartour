@@ -12,7 +12,7 @@ export async function GET(
     const { id } = await params;
     const db = getDb();
 
-    const documents = db.prepare(`
+    const documents = await db.prepare(`
       SELECT d.*,
         u.name as uploaded_by_name
       FROM documents d
@@ -53,12 +53,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Document ID is required' }, { status: 400 });
     }
 
-    const doc = db.prepare('SELECT * FROM documents WHERE id = ? AND trip_id = ?').get(documentId, id);
+    const doc = await db.prepare('SELECT * FROM documents WHERE id = ? AND trip_id = ?').get(documentId, id);
     if (!doc) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
 
-    db.prepare('DELETE FROM documents WHERE id = ?').run(documentId);
+    await db.prepare('DELETE FROM documents WHERE id = ?').run(documentId);
 
     return NextResponse.json({ ok: true, message: 'Document deleted' });
   } catch (error) {

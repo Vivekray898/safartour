@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     query += ` LIMIT ? OFFSET ?`;
     params.push(limit, offset);
 
-    const followups = db.prepare(query).all(...params);
+    const followups = await db.prepare(query).all(...params);
 
     return NextResponse.json({
       ok: true,
@@ -82,19 +82,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Trip ID, scheduled date, and followup type are required' }, { status: 400 });
     }
 
-    const trip = db.prepare('SELECT * FROM trips WHERE id = ? AND archived = 0').get(trip_id);
+    const trip = await db.prepare('SELECT * FROM trips WHERE id = ? AND archived = 0').get(trip_id);
     if (!trip) {
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 });
     }
 
     const assignedId = assigned_to || session.id;
 
-    const result = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO followups (trip_id, scheduled_date, scheduled_time, followup_type, assigned_to, note)
       VALUES (?, ?, ?, ?, ?, ?)
     `).run(trip_id, scheduled_date, scheduled_time || null, followup_type, assignedId, note || null);
 
-    logFollowUp(
+    await logFollowUp(
       Number(trip_id),
       (trip as { customer_id: number }).customer_id,
       session,
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
       note
     );
 
-    logActivity({
+    await logActivity({
       trip_id: Number(trip_id),
       customer_id: (trip as { customer_id: number }).customer_id,
       user: session,
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       metadata: { followup_type, scheduled_date, scheduled_time, assigned_to: assignedId, note },
     });
 
-    const followup = db.prepare(`
+    const followup = await db.prepare(`
       SELECT f.*,
         t.reference as trip_reference,
         c.name as customer_name,

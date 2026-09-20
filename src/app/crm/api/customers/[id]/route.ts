@@ -12,7 +12,7 @@ export async function GET(
     const { id } = await params;
     const db = getDb();
 
-    const customer = db.prepare(`
+    const customer = await db.prepare(`
       SELECT c.*,
         u.name as assigned_employee_name,
         (SELECT COUNT(*) FROM trips WHERE customer_id = c.id AND archived = 0) as active_trips,
@@ -59,7 +59,7 @@ export async function GET(
       );
     }
 
-    const trips = db.prepare(`
+    const trips = await db.prepare(`
       SELECT t.*,
         u.name as assigned_employee_name,
         (SELECT COALESCE(SUM(final_amount), 0) FROM quotations q WHERE q.trip_id = t.id) as quoted_amount,
@@ -99,7 +99,7 @@ export async function PUT(
     const body = await request.json();
     const db = getDb();
 
-    const existing = db.prepare('SELECT * FROM customers WHERE id = ?').get(id) as {
+    const existing = await db.prepare('SELECT * FROM customers WHERE id = ?').get(id) as {
       id: number;
       name: string;
       phone: string | null;
@@ -156,9 +156,9 @@ export async function PUT(
     updates.push('updated_at = datetime("now")');
     values.push(id);
 
-    db.prepare(`UPDATE customers SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+    await db.prepare(`UPDATE customers SET ${updates.join(', ')} WHERE id = ?`).run(...values);
 
-    logActivity({
+    await logActivity({
       customer_id: id,
       user: session,
       activity_type: 'customer_updated',
@@ -166,7 +166,7 @@ export async function PUT(
       metadata: { customer_id: id, fields: updates.filter(u => !u.includes('updated_at')) },
     });
 
-    const updated = db.prepare('SELECT * FROM customers WHERE id = ?').get(id);
+    const updated = await db.prepare('SELECT * FROM customers WHERE id = ?').get(id);
 
     return NextResponse.json({
       ok: true,
@@ -190,7 +190,7 @@ export async function DELETE(
     const { id } = await params;
     const db = getDb();
 
-    const existing = db.prepare('SELECT * FROM customers WHERE id = ?').get(id);
+    const existing = await db.prepare('SELECT * FROM customers WHERE id = ?').get(id);
     if (!existing) {
       return NextResponse.json(
         { error: 'Customer not found' },
@@ -198,7 +198,7 @@ export async function DELETE(
       );
     }
 
-    db.prepare('UPDATE customers SET archived = 1, updated_at = datetime("now") WHERE id = ?').run(id);
+    await db.prepare('UPDATE customers SET archived = 1, updated_at = datetime("now") WHERE id = ?').run(id);
 
     return NextResponse.json({
       ok: true,

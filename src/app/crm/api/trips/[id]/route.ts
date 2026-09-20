@@ -13,7 +13,7 @@ export async function GET(
     const { id } = await params;
     const db = getDb();
 
-    const trip = db.prepare(`
+    const trip = await db.prepare(`
       SELECT t.*,
         c.id as customer_id, c.name as customer_name, c.phone as customer_phone,
         c.whatsapp as customer_whatsapp, c.email as customer_email,
@@ -36,8 +36,8 @@ export async function GET(
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 });
     }
 
-    const activities = getActivitiesForTrip(Number(id));
-    const quotations = db.prepare(`
+    const activities = await getActivitiesForTrip(Number(id));
+    const quotations = await db.prepare(`
       SELECT q.*,
         u.name as prepared_by_name,
         (SELECT COUNT(*) FROM quotation_items qi WHERE qi.quotation_id = q.id) as items_count
@@ -47,7 +47,7 @@ export async function GET(
       ORDER BY q.created_at DESC
     `).all(id);
 
-    const payments = db.prepare(`
+    const payments = await db.prepare(`
       SELECT p.*,
         u.name as recorded_by_name
       FROM payments p
@@ -56,7 +56,7 @@ export async function GET(
       ORDER BY p.payment_date DESC
     `).all(id);
 
-    const followups = db.prepare(`
+    const followups = await db.prepare(`
       SELECT f.*,
         u.name as assigned_to_name,
         u2.name as completed_by_name
@@ -67,7 +67,7 @@ export async function GET(
       ORDER BY f.scheduled_date DESC
     `).all(id);
 
-    const tasks = db.prepare(`
+    const tasks = await db.prepare(`
       SELECT t.*,
         u.name as assigned_to_name
       FROM tasks t
@@ -76,7 +76,7 @@ export async function GET(
       ORDER BY t.created_at DESC
     `).all(id);
 
-    const documents = db.prepare(`
+    const documents = await db.prepare(`
       SELECT d.*,
         u.name as uploaded_by_name
       FROM documents d
@@ -85,11 +85,11 @@ export async function GET(
       ORDER BY d.created_at DESC
     `).all(id);
 
-    const itinerary = db.prepare(`
+    const itinerary = await db.prepare(`
       SELECT * FROM itinerary_days WHERE trip_id = ? ORDER BY day_number ASC
     `).all(id);
 
-    const communications = db.prepare(`
+    const communications = await db.prepare(`
       SELECT cm.*,
         u.name as recorded_by_name
       FROM communications cm
@@ -131,7 +131,7 @@ export async function PUT(
     const body = await request.json();
     const db = getDb();
 
-    const trip = db.prepare('SELECT * FROM trips WHERE id = ?').get(id) as {
+    const trip = await db.prepare('SELECT * FROM trips WHERE id = ?').get(id) as {
       id: number;
       customer_id: number;
       assigned_employee_id: number | null;
@@ -201,10 +201,10 @@ export async function PUT(
     updates.push('updated_at = datetime("now")');
     values.push(id);
 
-    db.prepare(`UPDATE trips SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+    await db.prepare(`UPDATE trips SET ${updates.join(', ')} WHERE id = ?`).run(...values);
 
     if (oldStatus !== newStatus) {
-      logStatusChange(
+      await logStatusChange(
         Number(id),
         trip.customer_id,
         session,
@@ -214,7 +214,7 @@ export async function PUT(
       );
     }
 
-    logActivity({
+    await logActivity({
       trip_id: Number(id),
       customer_id: trip.customer_id,
       user: session,
@@ -223,7 +223,7 @@ export async function PUT(
       metadata: { trip_id: Number(id), fields: updates.filter(u => !u.includes('updated_at') && !u.includes('status')) },
     });
 
-    const updated = db.prepare('SELECT * FROM trips WHERE id = ?').get(id);
+    const updated = await db.prepare('SELECT * FROM trips WHERE id = ?').get(id);
 
     return NextResponse.json({
       ok: true,
@@ -244,12 +244,12 @@ export async function DELETE(
     const { id } = await params;
     const db = getDb();
 
-    const trip = db.prepare('SELECT * FROM trips WHERE id = ?').get(id);
+    const trip = await db.prepare('SELECT * FROM trips WHERE id = ?').get(id);
     if (!trip) {
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 });
     }
 
-    db.prepare('UPDATE trips SET archived = 1, updated_at = datetime("now") WHERE id = ?').run(id);
+    await db.prepare('UPDATE trips SET archived = 1, updated_at = datetime("now") WHERE id = ?').run(id);
 
     return NextResponse.json({
       ok: true,

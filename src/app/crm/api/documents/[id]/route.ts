@@ -12,7 +12,7 @@ export async function GET(
     const { id } = await params;
     const db = getDb();
 
-    const doc = db.prepare('SELECT * FROM documents WHERE id = ?').get(id) as {
+    const doc = await db.prepare('SELECT * FROM documents WHERE id = ?').get(id) as {
       id: number;
       file_path: string;
       file_name: string;

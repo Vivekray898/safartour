@@ -12,7 +12,7 @@ export async function GET(
     const { id } = await params;
     const db = getDb();
 
-    const tasks = db.prepare(`
+    const tasks = await db.prepare(`
       SELECT t.*,
         u.name as assigned_to_name
       FROM tasks t
@@ -44,12 +44,12 @@ export async function POST(
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
-    const result = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO tasks (trip_id, title, description, assigned_to, priority, due_date)
       VALUES (?, ?, ?, ?, ?, ?)
     `).run(id, title, description || null, assigned_to || session.id, priority || 'medium', due_date || null);
 
-    logActivity({
+    await logActivity({
       trip_id: Number(id),
       user: session,
       activity_type: 'task_created',
@@ -57,7 +57,7 @@ export async function POST(
       metadata: { task_title: title, priority, due_date },
     });
 
-    const task = db.prepare(`
+    const task = await db.prepare(`
       SELECT t.*,
         u.name as assigned_to_name
       FROM tasks t
@@ -85,7 +85,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });
     }
 
-    const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as {
+    const task = await db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as {
       id: number;
       trip_id: number;
       status: string;
@@ -95,12 +95,12 @@ export async function PUT(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
-    const result = db.prepare(`
+    const result = await db.prepare(`
       UPDATE tasks SET status = ?, completed_at = datetime('now'), completed_by = ?
       WHERE id = ?
     `).run('completed', session.id, taskId);
 
-    logActivity({
+    await logActivity({
       trip_id: task.trip_id,
       user: session,
       activity_type: 'task_completed',

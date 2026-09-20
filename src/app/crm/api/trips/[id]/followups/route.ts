@@ -12,7 +12,7 @@ export async function GET(
     const { id } = await params;
     const db = getDb();
 
-    const followups = db.prepare(`
+    const followups = await db.prepare(`
       SELECT f.*,
         u.name as assigned_to_name,
         u2.name as completed_by_name
@@ -46,14 +46,14 @@ export async function POST(
       return NextResponse.json({ error: 'Date and type are required' }, { status: 400 });
     }
 
-    const result = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO followups (trip_id, scheduled_date, scheduled_time, followup_type, assigned_to, note)
       VALUES (?, ?, ?, ?, ?, ?)
     `).run(id, scheduled_date, scheduled_time || null, followup_type, assigned_to || session.id, note || null);
 
-    logFollowUp(Number(id), null, session, 'scheduled', followup_type, note);
+    await logFollowUp(Number(id), null, session, 'scheduled', followup_type, note);
 
-    const followup = db.prepare(`
+    const followup = await db.prepare(`
       SELECT f.*,
         u.name as assigned_to_name
       FROM followups f

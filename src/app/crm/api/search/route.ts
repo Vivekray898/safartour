@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const db = getDb();
     const searchTerm = `%${q}%`;
 
-    const customers = db.prepare(`
+    const customers = await db.prepare(`
       SELECT c.id, c.name, c.phone, c.email, c.city,
         (SELECT COUNT(*) FROM trips WHERE customer_id = c.id AND archived = 0) as trip_count,
         'customer' as type
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       LIMIT 10
     `).all(searchTerm, searchTerm, searchTerm);
 
-    const trips = db.prepare(`
+    const trips = await db.prepare(`
       SELECT t.id, t.reference, t.destination, t.status, t.priority,
         c.name as customer_name, c.phone as customer_phone,
         'trip' as type
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       LIMIT 10
     `).all(searchTerm, searchTerm, searchTerm, searchTerm);
 
-    const quotations = db.prepare(`
+    const quotations = await db.prepare(`
       SELECT q.id, q.reference, q.status, q.final_amount,
         t.reference as trip_reference,
         c.name as customer_name,

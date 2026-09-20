@@ -13,7 +13,7 @@ export async function GET(
     const { id } = await params;
     const db = getDb();
 
-    const payments = db.prepare(`
+    const payments = await db.prepare(`
       SELECT p.*,
         u.name as recorded_by_name
       FROM payments p
@@ -22,11 +22,11 @@ export async function GET(
       ORDER BY p.payment_date DESC
     `).all(id);
 
-    const totalPaid = db.prepare(`
+    const totalPaid = await db.prepare(`
       SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE trip_id = ?
     `).get(id) as { total: number };
 
-    const acceptedQuotation = db.prepare(`
+    const acceptedQuotation = await db.prepare(`
       SELECT q.final_amount FROM quotations q
       WHERE q.trip_id = ? AND q.status = 'accepted'
       ORDER BY q.created_at DESC LIMIT 1
@@ -71,18 +71,18 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 });
     }
 
-    const trip = db.prepare('SELECT * FROM trips WHERE id = ? AND archived = 0').get(id);
+    const trip = await db.prepare('SELECT * FROM trips WHERE id = ? AND archived = 0').get(id);
     if (!trip) {
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 });
     }
 
-    const existingPayments = db.prepare(`
+    const existingPayments = await db.prepare(`
       SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE trip_id = ?
     `).get(id) as { total: number };
 
     const newTotal = existingPayments.total + amount;
 
-    const acceptedQuotation = db.prepare(`
+    const acceptedQuotation = await db.prepare(`
       SELECT q.* FROM quotations q
       WHERE q.trip_id = ? AND q.status = 'accepted'
       ORDER BY q.created_at DESC LIMIT 1
@@ -95,14 +95,14 @@ export async function POST(
       });
     }
 
-    const result = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO payments (trip_id, amount, payment_date, payment_method, transaction_id, note, recorded_by)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(id, amount, payment_date, payment_method, transaction_id || null, note || null, session.id);
 
-    logPayment(Number(id), null, session, amount, payment_method, transaction_id, note);
+    await logPayment(Number(id), null, session, amount, payment_method, transaction_id, note);
 
-    const totalPaid = db.prepare(`
+    const totalPaid = await db.prepare(`
       SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE trip_id = ?
     `).get(id) as { total: number };
 

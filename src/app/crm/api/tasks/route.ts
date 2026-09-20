@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     query += ' ORDER BY t.due_date ASC, t.created_at DESC';
 
-    const tasks = db.prepare(query).all(...params);
+    const tasks = await db.prepare(query).all(...params);
 
     return NextResponse.json({
       ok: true,
@@ -69,19 +69,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Trip ID and title are required' }, { status: 400 });
     }
 
-    const trip = db.prepare('SELECT * FROM trips WHERE id = ? AND archived = 0').get(trip_id);
+    const trip = await db.prepare('SELECT * FROM trips WHERE id = ? AND archived = 0').get(trip_id);
     if (!trip) {
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 });
     }
 
     const assignedId = assigned_to || session.id;
 
-    const result = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO tasks (trip_id, title, description, assigned_to, priority, due_date)
       VALUES (?, ?, ?, ?, ?, ?)
     `).run(trip_id, title, description || null, assignedId, priority || 'medium', due_date || null);
 
-    logActivity({
+    await logActivity({
       trip_id: Number(trip_id),
       customer_id: (trip as { customer_id: number }).customer_id,
       user: session,
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       metadata: { task_title: title, priority, due_date, assigned_to: assignedId },
     });
 
-    const task = db.prepare(`
+    const task = await db.prepare(`
       SELECT t.*,
         tr.reference as trip_reference,
         c.name as customer_name,

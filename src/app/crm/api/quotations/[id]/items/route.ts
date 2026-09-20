@@ -11,7 +11,7 @@ export async function GET(
     const { id } = await params;
     const db = getDb();
 
-    const items = db.prepare(`
+    const items = await db.prepare(`
       SELECT * FROM quotation_items WHERE quotation_id = ? ORDER BY id ASC
     `).all(id);
 
@@ -37,16 +37,16 @@ export async function POST(
       return NextResponse.json({ error: 'Item description and category are required' }, { status: 400 });
     }
 
-    const result = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO quotation_items (quotation_id, category, description, details, quantity, amount)
       VALUES (?, ?, ?, ?, ?, ?)
     `).run(id, item.category, item.description, item.details || null, item.quantity || 1, item.amount || 0);
 
-    const subtotalResult = db.prepare(`
+    const subtotalResult = await db.prepare(`
       SELECT COALESCE(SUM(amount * quantity), 0) as subtotal FROM quotation_items WHERE quotation_id = ?
     `).get(id) as { subtotal: number };
 
-    const quotation = db.prepare('SELECT * FROM quotations WHERE id = ?').get(id) as {
+    const quotation = await db.prepare('SELECT * FROM quotations WHERE id = ?').get(id) as {
       id: number;
       subtotal: number;
       discount: number;
@@ -57,11 +57,11 @@ export async function POST(
     const newSubtotal = subtotalResult.subtotal;
     const newFinalAmount = Math.max(0, newSubtotal - (body.item?.discount !== undefined ? body.item.discount : quotation.discount) + quotation.tax);
 
-    db.prepare(`
+    await db.prepare(`
       UPDATE quotations SET subtotal = ?, final_amount = ?, updated_at = datetime('now') WHERE id = ?
     `).run(newSubtotal, newFinalAmount, id);
 
-    const newItem = db.prepare('SELECT * FROM quotation_items WHERE id = ?').get(result.lastInsertRowid);
+    const newItem = await db.prepare('SELECT * FROM quotation_items WHERE id = ?').get(result.lastInsertRowid);
 
     return NextResponse.json({ ok: true, item: newItem });
   } catch (error) {
@@ -84,13 +84,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Item ID is required' }, { status: 400 });
     }
 
-    db.prepare('DELETE FROM quotation_items WHERE id = ? AND quotation_id = ?').run(itemId, id);
+    await db.prepare('DELETE FROM quotation_items WHERE id = ? AND quotation_id = ?').run(itemId, id);
 
-    const subtotalResult = db.prepare(`
+    const subtotalResult = await db.prepare(`
       SELECT COALESCE(SUM(amount * quantity), 0) as subtotal FROM quotation_items WHERE quotation_id = ?
     `).get(id) as { subtotal: number };
 
-    db.prepare(`
+    await db.prepare(`
       UPDATE quotations SET subtotal = ?, updated_at = datetime('now') WHERE id = ?
     `).run(subtotalResult.subtotal, id);
 

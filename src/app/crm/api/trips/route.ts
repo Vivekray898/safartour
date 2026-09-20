@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
     query += ` LIMIT ? OFFSET ?`;
     params.push(limit, offset);
 
-    const trips = db.prepare(query).all(...params);
+    const trips = await db.prepare(query).all(...params);
 
     const countQuery = `
       SELECT COUNT(*) as count FROM trips t
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
       WHERE t.archived = 0
     `;
 
-    const totalResult = db.prepare(countQuery).get() as { count: number };
+    const totalResult = await db.prepare(countQuery).get() as { count: number };
 
     return NextResponse.json({
       ok: true,
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Customer ID is required' }, { status: 400 });
     }
 
-    const customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(customerId);
+    const customer = await db.prepare('SELECT * FROM customers WHERE id = ?').get(customerId);
     if (!customer) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
@@ -253,7 +253,7 @@ export async function POST(request: NextRequest) {
       session.id,
     ];
 
-    const result = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO trips (
         reference, customer_id, assigned_employee_id, status, priority, lead_source,
         campaign, utm_source, utm_medium, utm_campaign,
@@ -281,12 +281,12 @@ export async function POST(request: NextRequest) {
         feedback_followup_required,
         page_url, referrer, received_at,
         created_by
-      ) VALUES (?)
+      ) VALUES (${values.map(() => '?').join(', ')})
     `).run(values);
 
-    db.prepare(`UPDATE customers SET trip_count = trip_count + 1, updated_at = datetime('now') WHERE id = ?`).run(customerId);
+    await db.prepare(`UPDATE customers SET trip_count = trip_count + 1, updated_at = datetime('now') WHERE id = ?`).run(customerId);
 
-    logActivity({
+    await logActivity({
       trip_id: result.lastInsertRowid,
       customer_id: customerId,
       user: session,
@@ -295,7 +295,7 @@ export async function POST(request: NextRequest) {
       metadata: { trip_ref: reference, customer_name: (customer as { name: string }).name, source: body.lead_source || 'website' },
     });
 
-    const trip = db.prepare('SELECT * FROM trips WHERE id = ?').get(result.lastInsertRowid);
+    const trip = await db.prepare('SELECT * FROM trips WHERE id = ?').get(result.lastInsertRowid);
 
     return NextResponse.json({
       ok: true,

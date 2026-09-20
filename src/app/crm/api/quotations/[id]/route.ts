@@ -12,7 +12,7 @@ export async function GET(
     const { id } = await params;
     const db = getDb();
 
-    const quotation = db.prepare(`
+    const quotation = await db.prepare(`
       SELECT q.*,
         t.reference as trip_reference,
         c.name as customer_name, c.phone as customer_phone, c.email as customer_email,
@@ -32,7 +32,7 @@ export async function GET(
       return NextResponse.json({ error: 'Quotation not found' }, { status: 404 });
     }
 
-    const items = db.prepare(`
+    const items = await db.prepare(`
       SELECT * FROM quotation_items WHERE quotation_id = ? ORDER BY id ASC
     `).all(id);
 
@@ -56,7 +56,7 @@ export async function PUT(
     const body = await request.json();
     const db = getDb();
 
-    const quotation = db.prepare(`
+    const quotation = await db.prepare(`
       SELECT q.*,
         t.customer_id, t.reference as trip_reference
       FROM quotations q
@@ -64,6 +64,7 @@ export async function PUT(
       WHERE q.id = ?
     `).get(id) as {
       id: number;
+      trip_id: number;
       reference: string;
       status: string;
       final_amount: number;
@@ -140,20 +141,20 @@ export async function PUT(
     const values = Array.from(updates.values());
 
     if (body.status === 'revised' || body.status === 'sent') {
-      const existingRevisions = db.prepare('SELECT COUNT(*) as count FROM quotations WHERE trip_id = (SELECT trip_id FROM quotations WHERE id = ?)').get(id) as { count: number };
+      const existingRevisions = await db.prepare('SELECT COUNT(*) as count FROM quotations WHERE trip_id = (SELECT trip_id FROM quotations WHERE id = ?)').get(id) as { count: number };
 
       if (body.status === 'revised') {
         const newVersion = `V${existingRevisions.count + 1}`;
         const newRef = generateQuotationReference();
 
-        db.prepare(`
+        await db.prepare(`
           INSERT INTO quotations (reference, trip_id, version, status, quotation_date, valid_until, prepared_by, subtotal, discount, tax, final_amount, notes, terms)
           SELECT ?, t.id, ?, 'draft', datetime('now'), q.valid_until, q.prepared_by, q.subtotal, q.discount, q.tax, q.final_amount, q.notes, q.terms
           FROM quotations q JOIN trips t ON q.trip_id = t.id WHERE q.id = ?
         `).run(newRef, newVersion, id);
 
-        logActivity({
-          trip_id: (quotation as { trip_reference: string }).trip_reference,
+        await logActivity({
+          trip_id: quotation.trip_id,
           customer_id: quotation.customer_id,
           user: session,
           activity_type: 'quotation_revised',
@@ -163,10 +164,10 @@ export async function PUT(
       }
     }
 
-    db.prepare(`UPDATE quotations SET ${setClause}, updated_at = datetime('now') WHERE id = ?`).run(...values, id);
+    await db.prepare(`UPDATE quotations SET ${setClause}, updated_at = datetime('now') WHERE id = ?`).run(...values, id);
 
-    logQuotationAction(
-      (quotation as { trip_reference: string }).trip_reference,
+    await logQuotationAction(
+      quotation.trip_id,
       quotation.customer_id,
       session,
       body.status === 'revised' ? 'revised' :
@@ -180,8 +181,8 @@ export async function PUT(
     );
 
     if (body.status === 'sent') {
-      logActivity({
-        trip_id: (quotation as { trip_reference: string }).trip_reference,
+      await logActivity({
+        trip_id: quotation.trip_id,
         customer_id: quotation.customer_id,
         user: session,
         activity_type: 'quotation_sent',
@@ -190,7 +191,7 @@ export async function PUT(
       });
     }
 
-    const updated = db.prepare(`
+    const updated = await db.prepare(`
       SELECT q.*,
         t.reference as trip_reference,
         c.name as customer_name,
@@ -222,12 +223,12 @@ export async function DELETE(
     const { id } = await params;
     const db = getDb();
 
-    const quotation = db.prepare('SELECT * FROM quotations WHERE id = ?').get(id);
+    const quotation = await db.prepare('SELECT * FROM quotations WHERE id = ?').get(id);
     if (!quotation) {
       return NextResponse.json({ error: 'Quotation not found' }, { status: 404 });
     }
 
-    db.prepare('DELETE FROM quotations WHERE id = ?').run(id);
+    await db.prepare('DELETE FROM quotations WHERE id = ?').run(id);
 
     return NextResponse.json({ ok: true, message: 'Quotation deleted' });
   } catch (error) {

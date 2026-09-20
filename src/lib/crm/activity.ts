@@ -37,11 +37,11 @@ interface ActivityParams {
   metadata?: Record<string, unknown>;
 }
 
-export function logActivity(params: ActivityParams): void {
+export async function logActivity(params: ActivityParams): Promise<void> {
   const db = getDb();
   const { trip_id, customer_id, user, activity_type, description, metadata } = params;
 
-  db.prepare(`
+  await db.prepare(`
     INSERT INTO activities (trip_id, customer_id, user_id, activity_type, description, metadata, created_at)
     VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
   `).run(
@@ -54,14 +54,14 @@ export function logActivity(params: ActivityParams): void {
   );
 }
 
-export function logStatusChange(
+export async function logStatusChange(
   tripId: number,
   customerId: number,
   user: SessionUser,
   from: string,
   to: string,
   note?: string
-): void {
+): Promise<void> {
   logActivity({
     trip_id: tripId,
     customer_id: customerId,
@@ -72,7 +72,7 @@ export function logStatusChange(
   });
 }
 
-export function logQuotationAction(
+export async function logQuotationAction(
   tripId: number,
   customerId: number,
   user: SessionUser,
@@ -80,7 +80,7 @@ export function logQuotationAction(
   quotationRef: string,
   amount: number,
   note?: string
-): void {
+): Promise<void> {
   const actionLabels: Record<string, string> = {
     created: 'created',
     revised: 'revised',
@@ -100,7 +100,7 @@ export function logQuotationAction(
   });
 }
 
-export function logPayment(
+export async function logPayment(
   tripId: number,
   customerId: number,
   user: SessionUser,
@@ -108,7 +108,7 @@ export function logPayment(
   method: string,
   transactionId?: string,
   note?: string
-): void {
+): Promise<void> {
   logActivity({
     trip_id: tripId,
     customer_id: customerId,
@@ -119,14 +119,14 @@ export function logPayment(
   });
 }
 
-export function logFollowUp(
+export async function logFollowUp(
   tripId: number,
   customerId: number,
   user: SessionUser,
   action: 'scheduled' | 'completed' | 'missed',
   followUpType: string,
   note?: string
-): void {
+): Promise<void> {
   const actionLabels: Record<string, string> = {
     scheduled: 'scheduled',
     completed: 'completed',
@@ -143,7 +143,7 @@ export function logFollowUp(
   });
 }
 
-export function getActivitiesForTrip(tripId: number, limit = 50): Array<{
+export async function getActivitiesForTrip(tripId: number, limit = 50): Promise<Array<{
   id: number;
   trip_id: number | null;
   customer_id: number | null;
@@ -155,7 +155,7 @@ export function getActivitiesForTrip(tripId: number, limit = 50): Array<{
   user_name?: string | null;
 }> {
   const db = getDb();
-  const rows = db.prepare(`
+  const rows = await db.prepare(`
     SELECT a.*,
       u.name as user_name
     FROM activities a
@@ -181,7 +181,7 @@ export function getActivitiesForTrip(tripId: number, limit = 50): Array<{
   }));
 }
 
-export function getActivitiesForCustomer(customerId: number, limit = 50): Array<{
+export async function getActivitiesForCustomer(customerId: number, limit = 50): Promise<Array<{
   id: number;
   trip_id: number | null;
   customer_id: number | null;
@@ -194,7 +194,7 @@ export function getActivitiesForCustomer(customerId: number, limit = 50): Array<
   trip_reference?: string | null;
 }> {
   const db = getDb();
-  const rows = db.prepare(`
+  const rows = await db.prepare(`
     SELECT a.*,
       u.name as user_name,
       t.reference as trip_reference

@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       taxApplicable: false,
     };
 
-    const users = db.prepare(`
+    const users = await db.prepare(`
       SELECT id, name, email, phone, role, is_active, created_at
       FROM users
       ORDER BY created_at DESC
@@ -53,19 +53,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Name, email, password, and role are required' }, { status: 400 });
       }
 
-      const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+      const existing = await db.prepare('SELECT id FROM users WHERE email = ?').get(email);
       if (existing) {
         return NextResponse.json({ error: 'Email already exists' }, { status: 400 });
       }
 
       const hashedPassword = await hashPassword(password);
 
-      const result = db.prepare(`
+      const result = await db.prepare(`
         INSERT INTO users (name, email, phone, password_hash, role, is_active)
         VALUES (?, ?, ?, ?, ?, ?)
       `).run(name, email, phone || null, hashedPassword, role || 'employee', is_active !== undefined ? (is_active ? 1 : 0) : 1);
 
-      const user = db.prepare('SELECT id, name, email, phone, role, is_active, created_at FROM users WHERE id = ?').get(result.lastInsertRowid);
+      const user = await db.prepare('SELECT id, name, email, phone, role, is_active, created_at FROM users WHERE id = ?').get(result.lastInsertRowid);
 
       return NextResponse.json({ ok: true, user });
     }
@@ -92,9 +92,9 @@ export async function POST(request: NextRequest) {
       updates.push('updated_at = datetime("now")');
       values.push(userId);
 
-      db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+      await db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
 
-      const user = db.prepare('SELECT id, name, email, phone, role, is_active, created_at FROM users WHERE id = ?').get(userId);
+      const user = await db.prepare('SELECT id, name, email, phone, role, is_active, created_at FROM users WHERE id = ?').get(userId);
 
       return NextResponse.json({ ok: true, user });
     }
@@ -105,11 +105,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
       }
 
-      if (userId === (await getSession()).id) {
+      const current = await getSession();
+      if (current && userId === current.id) {
         return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 });
       }
 
-      db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+      await db.prepare('DELETE FROM users WHERE id = ?').run(userId);
 
       return NextResponse.json({ ok: true, message: 'User deleted' });
     }

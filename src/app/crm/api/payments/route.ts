@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     query += ` LIMIT ? OFFSET ?`;
     params.push(limit, offset);
 
-    const payments = db.prepare(query).all(...params);
+    const payments = await db.prepare(query).all(...params);
 
     return NextResponse.json({
       ok: true,
@@ -73,18 +73,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 });
     }
 
-    const trip = db.prepare('SELECT * FROM trips WHERE id = ? AND archived = 0').get(trip_id);
+    const trip = await db.prepare('SELECT * FROM trips WHERE id = ? AND archived = 0').get(trip_id);
     if (!trip) {
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 });
     }
 
-    const acceptedQuotation = db.prepare(`
+    const acceptedQuotation = await db.prepare(`
       SELECT q.* FROM quotations q
       WHERE q.trip_id = ? AND q.status = 'accepted'
       ORDER BY q.created_at DESC LIMIT 1
     `).get(trip_id) as { final_amount: number } | undefined;
 
-    const existingPayments = db.prepare(`
+    const existingPayments = await db.prepare(`
       SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE trip_id = ?
     `).get(trip_id) as { total: number };
 
@@ -97,12 +97,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const result = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO payments (trip_id, amount, payment_date, payment_method, transaction_id, note, recorded_by)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(trip_id, amount, payment_date, payment_method, transaction_id || null, note || null, session.id);
 
-    logPayment(
+    await logPayment(
       Number(trip_id),
       (trip as { customer_id: number }).customer_id,
       session,
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       note
     );
 
-    logActivity({
+    await logActivity({
       trip_id: Number(trip_id),
       customer_id: (trip as { customer_id: number }).customer_id,
       user: session,
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
       metadata: { amount, method: payment_method, transaction_id, note },
     });
 
-    const payment = db.prepare(`
+    const payment = await db.prepare(`
       SELECT p.*,
         t.reference as trip_reference,
         c.name as customer_name,
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
       WHERE p.id = ?
     `).get(result.lastInsertRowid);
 
-    const totalPaidResult = db.prepare(`
+    const totalPaidResult = await db.prepare(`
       SELECT COALESCE(SUM(p.amount), 0) as total FROM payments p
       JOIN trips t ON p.trip_id = t.id
       WHERE t.id = ?
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
 
     if (acceptedQuotation) {
       if (paidAmount >= acceptedQuotation.final_amount && acceptedQuotation.final_amount > 0) {
-        logActivity({
+        await logActivity({
           trip_id: Number(trip_id),
           customer_id: (trip as { customer_id: number }).customer_id,
           user: session,

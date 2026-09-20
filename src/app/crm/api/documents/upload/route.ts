@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(filepath, buffer);
 
-    const result = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO documents (trip_id, customer_id, document_type, file_name, file_path, file_size, mime_type, notes, uploaded_by)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       session.id
     );
 
-    logActivity({
+    await logActivity({
       trip_id: tripId ? Number(tripId) : undefined,
       customer_id: customerId ? Number(customerId) : undefined,
       user: session,

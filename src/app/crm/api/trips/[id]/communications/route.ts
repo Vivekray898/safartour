@@ -13,7 +13,7 @@ export async function GET(
     const { id } = await params;
     const db = getDb();
 
-    const communications = db.prepare(`
+    const communications = await db.prepare(`
       SELECT cm.*,
         u.name as recorded_by_name
       FROM communications cm
@@ -50,12 +50,12 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid communication type' }, { status: 400 });
     }
 
-    const result = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO communications (trip_id, communication_type, occurred_at, subject, outcome, summary, recorded_by)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(id, communication_type, occurred_at, subject || null, outcome || null, summary || null, session.id);
 
-    logActivity({
+    await logActivity({
       trip_id: Number(id),
       user: session,
       activity_type: 'communication_logged',
@@ -63,7 +63,7 @@ export async function POST(
       metadata: { type: communication_type, subject, occurred_at },
     });
 
-    const communication = db.prepare(`
+    const communication = await db.prepare(`
       SELECT cm.*,
         u.name as recorded_by_name
       FROM communications cm
