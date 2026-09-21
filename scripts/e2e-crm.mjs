@@ -144,11 +144,75 @@ ok('activity timeline auto-logged', Number(act[0]?.n) >= 3, `got ${act[0]?.n}`);
 const dash = await api('GET', '/crm/api/dashboard');
 ok('dashboard API from live data', dash.status === 200 && dash.json !== null);
 
+console.log('— hotels / suppliers / drivers (new CRUD) —');
+const sup = await api('POST', '/crm/api/suppliers', { name: `E2E Supplier ${STAMP}`, type: 'transport_company', phone: '9000000000', location: 'Siliguri' });
+ok('create supplier', sup.status === 201 || sup.status === 200);
+const supRow = await sql`SELECT id FROM suppliers WHERE name = ${`E2E Supplier ${STAMP}`} ORDER BY id DESC LIMIT 1`;
+const supplierId = supRow[0]?.id;
+ok('supplier persisted', !!supplierId);
+
+const supPut = await api('PUT', `/crm/api/suppliers/${supplierId}`, { name: `E2E Supplier Renamed ${STAMP}`, type: 'transport_company', status: 'active' });
+ok('edit supplier', supPut.status === 200);
+
+const hotel = await api('POST', '/crm/api/hotels', { name: `E2E Hotel ${STAMP}`, destination: 'Darjeeling', category: 'Deluxe', supplier_id: supplierId, is_active: true });
+ok('create hotel', hotel.status === 201 || hotel.status === 200);
+const hotelRow = await sql`SELECT id, supplier_id FROM hotels WHERE name = ${`E2E Hotel ${STAMP}`} ORDER BY id DESC LIMIT 1`;
+const hotelId = hotelRow[0]?.id;
+ok('hotel persisted with supplier link', !!hotelId && Number(hotelRow[0]?.supplier_id) === Number(supplierId));
+
+const hotelPut = await api('PUT', `/crm/api/hotels/${hotelId}`, { name: `E2E Hotel Renamed ${STAMP}`, destination: 'Darjeeling', is_active: true });
+ok('edit hotel', hotelPut.status === 200);
+
+const drv = await api('POST', '/crm/api/drivers', { name: `E2E Driver ${STAMP}`, phone: '9800000000', vehicle_type: 'Innova', vehicle_number: 'WB-E2E-001', availability: 'available' });
+ok('create driver', drv.status === 201 || drv.status === 200);
+const drvRow = await sql`SELECT id FROM drivers WHERE name = ${`E2E Driver ${STAMP}`} ORDER BY id DESC LIMIT 1`;
+const driverId = drvRow[0]?.id;
+ok('driver persisted', !!driverId);
+const drvPut = await api('PUT', `/crm/api/drivers/${driverId}`, { name: `E2E Driver Renamed ${STAMP}`, availability: 'on_trip' });
+ok('edit driver', drvPut.status === 200);
+
+console.log('— quotation duplicate + tax_rate —');
+const dup = await api('POST', '/crm/api/quotations', { duplicateOf: Number(qrow[0]?.id) });
+ok('duplicate quotation', dup.status === 201 || dup.status === 200);
+const dupRow = await sql`SELECT id, reference, status, subtotal, final_amount, tax_rate FROM quotations WHERE trip_id = ${tripId} ORDER BY id DESC LIMIT 1`;
+ok('duplicate is a fresh draft with same amounts',
+  dupRow.length === 1 && dupRow[0]?.status === 'draft' && Number(dupRow[0]?.subtotal) === 11000 && Number(dupRow[0]?.final_amount) === 10500,
+  JSON.stringify(dupRow[0] ?? null));
+
+const qWithTax = await api('POST', '/crm/api/quotations', {
+  trip_id: tripId,
+  items: [ { category: 'other', description: 'Package', quantity: 1, amount: 10000 } ],
+  discount: 0, tax_rate: 5,
+});
+ok('create quotation with GST 5%', qWithTax.status === 200 || qWithTax.status === 201);
+const qTaxRow = await sql`SELECT subtotal, tax, tax_rate, final_amount FROM quotations WHERE trip_id = ${tripId} ORDER BY id DESC LIMIT 1`;
+ok('GST snapshot = 500 on 10000 @5%',
+  Number(qTaxRow[0]?.tax) === 500 && Number(qTaxRow[0]?.tax_rate) === 5 && Number(qTaxRow[0]?.final_amount) === 10500,
+  JSON.stringify(qTaxRow[0] ?? null));
+
+console.log('— settings: company profile —');
+const settingsGet = await api('GET', '/crm/api/settings');
+ok('settings includes company profile', settingsGet.status === 200 && settingsGet.json?.company?.company_name !== undefined);
+const settingsSet = await api('POST', '/crm/api/settings', { action: 'updateCompany', values: { company_name: 'Safar Tours', phone: '+91 98765 43210', gst_rate: 5 } });
+ok('update company profile', settingsSet.status === 200 && settingsSet.json?.ok === true);
+
+console.log('— PDF generation —');
+const pdfRes = await fetch(`${BASE}/crm/api/quotations/${qrow[0]?.id}/pdf`, { headers: { Cookie: cookie } });
+const pdfBuf = Buffer.from(await pdfRes.arrayBuffer());
+ok('PDF endpoint returns a real PDF', pdfRes.status === 200 && pdfBuf.subarray(0, 4).toString('ascii') === '%PDF', `status=${pdfRes.status} bytes=${pdfBuf.length}`);
+ok('PDF has substantial content', pdfBuf.length > 5000, `bytes=${pdfBuf.length}`);
+const pdfInline = await fetch(`${BASE}/crm/api/quotations/${qrow[0]?.id}/pdf?inline=1`, { headers: { Cookie: cookie } });
+ok('inline PDF preview mode works', pdfInline.status === 200 && (pdfInline.headers.get('content-disposition') || '').includes('inline'));
+
 console.log('— cleanup (soft archive only) —');
+await api('DELETE', `/crm/api/hotels/${hotelId}`);
+await api('DELETE', `/crm/api/suppliers/${supplierId}`);
+await api('DELETE', `/crm/api/drivers/${driverId}`);
 await api('DELETE', `/crm/api/trips/${tripId}`);
 await api('DELETE', `/crm/api/customers/${customerId}`);
-const arch = await sql`SELECT (SELECT archived FROM trips WHERE id = ${tripId}) AS t, (SELECT archived FROM customers WHERE id = ${customerId}) AS c`;
-ok('trip + customer archived (data preserved)', Number(arch[0]?.t) === 1 && Number(arch[0]?.c) === 1);
+const arch = await sql`SELECT (SELECT archived FROM trips WHERE id = ${tripId}) AS t, (SELECT archived FROM customers WHERE id = ${customerId}) AS c, (SELECT archived FROM hotels WHERE id = ${hotelId}) AS h, (SELECT archived FROM suppliers WHERE id = ${supplierId}) AS s, (SELECT archived FROM drivers WHERE id = ${driverId}) AS d`;
+ok('trip + customer + hotel + supplier + driver archived (data preserved)',
+  Number(arch[0]?.t) === 1 && Number(arch[0]?.c) === 1 && Number(arch[0]?.h) === 1 && Number(arch[0]?.s) === 1 && Number(arch[0]?.d) === 1);
 
 console.log(`\nRESULT: ${pass} passed, ${fail} failed`);
 await sql.end({ timeout: 5 });

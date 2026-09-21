@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession, requireApiUser, requireAdminApi } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
 import { hashPassword } from '@/lib/crm/auth';
+import { getCompanySettings } from '@/lib/crm/settings';
+import { storageConfigured } from '@/lib/crm/storage';
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,6 +27,8 @@ export async function GET(request: NextRequest) {
       taxApplicable: false,
     };
 
+    const company = await getCompanySettings();
+
     const users = await db.prepare(`
       SELECT id, name, email, phone, role, is_active, created_at
       FROM users
@@ -34,6 +38,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       settings,
+      company,
+      storageConfigured: storageConfigured(),
       users,
       currentUser: session,
     });
@@ -52,7 +58,52 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const db = getDb();
 
-    const { action, name, email, phone, password, role, is_active } = body;
+    const { action } = body;
+
+    // ---- company profile (branding / GST / banking / PDF footer) ----
+    if (action === 'updateCompany') {
+      const db = getDb();
+      const allowed = new Set([
+        'company_name', 'address', 'phone', 'whatsapp', 'email', 'website',
+        'gst_enabled', 'gst_rate', 'gstin', 'gst_legal_name', 'gst_state', 'gst_state_code',
+        'bank_name', 'bank_account_name', 'bank_account_number', 'bank_ifsc', 'upi_id',
+        'payment_terms', 'cancellation_policy', 'terms_conditions', 'pdf_footer_text',
+        'quotation_prefix',
+      ]);
+
+      const updates: string[] = [];
+      const values: (string | number)[] = [];
+      for (const [key, value] of Object.entries(body.values ?? {})) {
+        if (!allowed.has(key)) continue;
+        if (key === 'gst_enabled') {
+          updates.push('gst_enabled = ?');
+          values.push(value ? 1 : 0);
+        } else if (key === 'gst_rate') {
+          const rate = Math.max(0, Math.min(28, Math.round(Number(value) || 0)));
+          updates.push('gst_rate = ?');
+          values.push(rate);
+        } else if (key === 'quotation_prefix') {
+          const prefix = String(value).trim().replace(/[^A-Za-z]/g, '').slice(0, 6).toUpperCase() || 'QT';
+          updates.push('quotation_prefix = ?');
+          values.push(prefix);
+        } else {
+          updates.push(`${key} = ?`);
+          values.push(value === '' || value === null ? null : String(value));
+        }
+      }
+
+      if (updates.length === 0) {
+        return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+      }
+
+      updates.push("updated_at = datetime('now')");
+      await db.prepare(`UPDATE company_settings SET ${updates.join(', ')} WHERE id = 1`).run(...values);
+
+      const company = await getCompanySettings();
+      return NextResponse.json({ ok: true, company });
+    }
+
+    const { name, email, phone, password, role, is_active } = body;
 
     if (action === 'createUser') {
       if (!name || !email || !password || !role) {

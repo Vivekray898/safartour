@@ -1,5 +1,7 @@
 import { getSession, requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
+import { formatCRMDate } from '@/lib/crm/format';
+import CRMEmptyState from '@/components/crm/common/CRMEmptyState';
 import Link from 'next/link';
 import { Briefcase } from 'lucide-react';
 
@@ -54,11 +56,12 @@ export default async function ItinerariesPage() {
             <tbody className="divide-y divide-gray-100">
               {itineraries.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center">
-                    <div className="text-gray-400">
-                      <Briefcase className="w-8 h-8 mx-auto mb-2" />
-                      <p className="text-sm font-medium">No itineraries created</p>
-                    </div>
+                  <td colSpan={6} className="px-0 py-0">
+                    <CRMEmptyState
+                      icon={Briefcase}
+                      title="No itineraries created"
+                      description="Day-by-day itineraries are built from a trip's page. Trips with itineraries will be listed here."
+                    />
                   </td>
                 </tr>
               ) : (
@@ -72,8 +75,8 @@ export default async function ItinerariesPage() {
                     <td className="px-4 py-3 text-sm text-gray-900">{itr.customer_name || 'No customer'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{itr.destination || '-'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {itr.start_date ? new Date(itr.start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '-'}
-                      {itr.end_date ? ' - ' + new Date(itr.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''}
+                      {formatCRMDate(itr.start_date, '—')}
+                      {itr.end_date ? ` – ${formatCRMDate(itr.end_date)}` : ''}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700">
@@ -81,7 +84,7 @@ export default async function ItinerariesPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">
-                      {new Date(itr.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {formatCRMDate(itr.created_at, '—')}
                     </td>
                   </tr>
                 ))

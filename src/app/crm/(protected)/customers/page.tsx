@@ -1,9 +1,12 @@
 import { requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
+import { formatReference, formatCRMDate } from '@/lib/crm/format';
 import CRMFilterBar from '@/components/crm/common/CRMFilterBar';
 import CRMPagination from '@/components/crm/common/CRMPagination';
+import CRMEmptyState from '@/components/crm/common/CRMEmptyState';
+import { CustomerActionsProvider, AddCustomerButton, CustomerRowActions, type CustomerRow } from '@/components/crm/entities/CustomerActions';
 import Link from 'next/link';
-import { Plus, Search } from 'lucide-react';
+import { Users } from 'lucide-react';
 
 export default async function CustomersPage({
   searchParams,
@@ -50,9 +53,13 @@ export default async function CustomersPage({
 
   const customers = await db.prepare(query).all(...filterParams);
   const totalResult = await db.prepare(countQuery).get() as { count: number };
+  const employees = await db.prepare('SELECT id, name FROM users WHERE is_active = 1 ORDER BY name ASC').all() as Array<{ id: number; name: string }>;
+
+  const rows = customers as unknown as CustomerRow[];
 
   return (
-    <div className="space-y-6">
+    <CustomerActionsProvider employees={employees} canEdit={session.role === 'admin'}>
+    <div className="space-y-6 min-w-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
@@ -61,18 +68,11 @@ export default async function CustomersPage({
         <div className="flex items-center gap-2">
           <Link
             href="/crm/leads/quick"
-            className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Quick Lead
-          </Link>
-          <Link
-            href="/crm/leads/new"
             className="inline-flex items-center gap-2 bg-white border border-gray-200 hover:border-green-500 hover:text-green-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
-            <Plus className="w-4 h-4" />
-            New Lead
+            Quick Lead
           </Link>
+          <AddCustomerButton />
         </div>
       </div>
 
@@ -95,26 +95,30 @@ export default async function CustomersPage({
                 <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Total Paid</th>
                 <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {customers.length === 0 ? (
+              {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center">
-                    <div className="text-gray-400">
-                      <Search className="w-8 h-8 mx-auto mb-2" />
-                      <p className="text-sm font-medium">No customers found</p>
-                      <p className="text-xs mt-1">Create your first lead to add a customer.</p>
-                    </div>
+                  <td colSpan={9} className="px-0 py-0">
+                    <CRMEmptyState
+                      icon={Users}
+                      title={search ? 'No customers match your search' : 'No customers yet'}
+                      description={search ? 'Try a different name, phone or email.' : 'Customers created from enquiries or manually added will appear here.'}
+                      ctaLabel={search ? undefined : 'Add Customer'}
+                      ctaHref={search ? undefined : '/crm/customers'}
+                    />
                   </td>
                 </tr>
               ) : (
-                customers.map(customer => (
+                rows.map(customer => (
                   <tr key={customer.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
                       <Link href={`/crm/customers/${customer.id}`} className="font-medium text-green-700 hover:text-green-800 text-sm">
                         {customer.name}
                       </Link>
+                      <div className="text-xs font-mono text-gray-400 mt-0.5">{formatReference('CUS', customer.id)}</div>
                       {customer.is_repeat_customer && (
                         <span className="inline-block ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Repeat</span>
                       )}
@@ -139,16 +143,19 @@ export default async function CustomersPage({
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-right text-gray-900 font-medium">
-                      ₹{(customer.total_quoted || 0).toLocaleString()}
+                      {(customer.total_quoted || 0).toLocaleString('en-IN')}
                     </td>
                     <td className="px-4 py-3 text-sm text-right text-gray-900 font-medium">
-                      ₹{(customer.total_paid || 0).toLocaleString()}
+                      {(customer.total_paid || 0).toLocaleString('en-IN')}
                     </td>
                     <td className="px-4 py-3 text-center text-sm text-gray-600">
                       {customer.assigned_employee_name || 'Unassigned'}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">
-                      {new Date(customer.updated_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {formatCRMDate(customer.updated_at, '—')}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <CustomerRowActions customer={customer} canEdit={session.role === 'admin'} />
                     </td>
                   </tr>
                 ))
@@ -169,5 +176,6 @@ export default async function CustomersPage({
         )}
       </div>
     </div>
+    </CustomerActionsProvider>
   );
 }

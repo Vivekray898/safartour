@@ -1,10 +1,14 @@
-import { getSession, requireAuth } from '@/lib/crm/auth';
+import { requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
-import { CRM_PAYMENT_METHODS } from '@/config/crm';
+import { formatCRMDate, formatReference } from '@/lib/crm/format';
+import CRMFilterBar from '@/components/crm/common/CRMFilterBar';
+import CRMPagination from '@/components/crm/common/CRMPagination';
+import CRMEmptyState from '@/components/crm/common/CRMEmptyState';
 import { CRMPaymentMethodBadge } from '@/components/crm/common/CRMStatusBadge';
 import { formatCurrency } from '@/config/crm';
+import { PaymentActionsProvider, AddPaymentButton, PaymentRowActions, type PaymentListRow } from '@/components/crm/entities/PaymentActions';
 import Link from 'next/link';
-import { Plus, Search } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
 
 export default async function PaymentsPage({
   searchParams,
@@ -16,7 +20,7 @@ export default async function PaymentsPage({
   const db = getDb();
 
   const tripId = params.tripId || '';
-  const page = parseInt(params.page || '1');
+  const page = Math.max(1, parseInt(params.page || '1'));
   const limit = 20;
   const offset = (page - 1) * limit;
 
@@ -51,90 +55,96 @@ export default async function PaymentsPage({
     WHERE t.archived = 0
   `).get() as { total: number };
 
+  const totalCount = await db.prepare(
+    tripId ? 'SELECT COUNT(*) as count FROM payments WHERE trip_id = ?' : 'SELECT COUNT(*) as count FROM payments'
+  ).get(...(tripId ? [tripId] : [])) as { count: number };
+
+  // Trips for the record-payment selector (human-readable labels).
+  const trips = await db.prepare(`
+    SELECT t.id, t.reference, t.destination, c.name as customer_name
+    FROM trips t LEFT JOIN customers c ON t.customer_id = c.id
+    WHERE t.archived = 0
+    ORDER BY t.created_at DESC LIMIT 100
+  `).all() as Array<{ id: number; reference: string; destination: string | null; customer_name: string | null }>;
+
+  const canEdit = session.role === 'admin' || session.role === 'employee';
+  const rows = payments as unknown as PaymentListRow[];
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
-          <p className="text-sm text-gray-500">Total collected: {formatCurrency(totalAllPayments.total)}</p>
-        </div>
-        <Link
-          href="/crm/leads?status=booked"
-          className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Record Payment
-        </Link>
-      </div>
-
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-4 border-b border-gray-100 flex flex-wrap gap-3 items-center">
-          <div className="relative flex-1 min-w-[200px] max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search payments..."
-              className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
+    <PaymentActionsProvider
+      canEdit={canEdit}
+      trips={trips.map(t => ({ id: t.id, label: `${t.reference} — ${t.customer_name || t.destination || 'Trip'}` }))}
+    >
+      <div className="space-y-6 min-w-0">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
+            <p className="text-sm text-gray-500">Total collected: {formatCurrency(totalAllPayments.total)}</p>
           </div>
+          <AddPaymentButton />
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Trip Ref</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Destination</th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction ID</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Recorded By</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {payments.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center">
-                    <div className="text-gray-400">
-                      <Search className="w-8 h-8 mx-auto mb-2" />
-                      <p className="text-sm font-medium">No payments recorded</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                payments.map(payment => (
-                  <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-gray-900">
-                        {new Date(payment.payment_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Link href={`/crm/leads/${payment.trip_id}`} className="text-sm font-medium text-green-700 hover:text-green-800">
-                        {payment.trip_reference}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{payment.customer_name || 'No customer'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{payment.destination || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-right font-semibold text-green-700">
-                      {formatCurrency(payment.amount)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <CRMPaymentMethodBadge method={payment.payment_method} />
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {payment.transaction_id || 'N/A'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{payment.recorded_by_name || 'Unknown'}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden min-w-0">
+          <CRMFilterBar
+            basePath="/crm/payments"
+            searchValue=""
+            searchPlaceholder="Search payments..."
+          />
+
+          {rows.length === 0 ? (
+            <CRMEmptyState
+              icon={CreditCard}
+              title={tripId ? 'No payments for this trip' : 'No payments recorded'}
+              description={tripId
+                ? 'Record a payment against this trip to track collections.'
+                : 'Payments are recorded against trips. Record the first payment to start tracking collections.'}
+              ctaLabel={tripId ? undefined : 'Record Payment'}
+              ctaHref={tripId ? undefined : '/crm/payments'}
+            />
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-100 bg-gray-50">
+                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Trip</th>
+                      <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                      <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+                      <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Recorded By</th>
+                      <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider"><span className="sr-only">Actions</span></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {rows.map(payment => (
+                      <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 text-xs font-mono text-gray-500 whitespace-nowrap">{formatReference('PAY', payment.id)}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">{formatCRMDate(payment.payment_date)}</td>
+                        <td className="px-4 py-3">
+                          <Link href={`/crm/leads/${payment.trip_id}`} className="text-sm font-medium text-green-700 hover:text-green-800">
+                            {payment.trip_reference}
+                          </Link>
+                          <div className="text-xs text-gray-500">{payment.customer_name || ''}</div>
+                        </td>
+                        <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-900">{payment.customer_name || '—'}</td>
+                        <td className="px-4 py-3 text-sm text-right font-semibold text-green-700">{formatCurrency(payment.amount)}</td>
+                        <td className="px-4 py-3"><CRMPaymentMethodBadge method={payment.payment_method} /></td>
+                        <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-600">{payment.recorded_by_name || '—'}</td>
+                        <td className="px-4 py-3 text-right">
+                          <PaymentRowActions payment={payment} canEdit={session.role === 'admin'} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <CRMPagination basePath="/crm/payments" page={page} totalCount={totalCount.count} limit={limit} params={tripId ? { tripId } : {}} />
+            </>
+          )}
         </div>
       </div>
-    </div>
+    </PaymentActionsProvider>
   );
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, requireApiUser } from '@/lib/crm/auth';
+import { requireApiUser } from '@/lib/crm/auth';
 import { getDb, parseId } from '@/lib/crm/db';
 import { generateQuotationPDF } from '@/lib/crm/pdf';
 
@@ -29,6 +29,7 @@ export async function GET(
         t.adults as trip_adults,
         c.name as customer_name,
         c.phone as customer_phone,
+        c.whatsapp as customer_whatsapp,
         c.email as customer_email,
         c.city as customer_city,
         u.name as prepared_by_name
@@ -40,15 +41,16 @@ export async function GET(
     `).get(id) as {
       id: number;
       reference: string;
+      status: string;
       quotation_date: string;
       valid_until: string | null;
       subtotal: number;
       discount: number;
       tax: number;
+      tax_rate?: number;
       final_amount: number;
       notes: string | null;
       terms: string | null;
-      prepared_by: number | null;
       prepared_by_name: string | null;
       trip_reference: string;
       trip_destination: string | null;
@@ -58,6 +60,7 @@ export async function GET(
       trip_adults: number | null;
       customer_name: string;
       customer_phone: string | null;
+      customer_whatsapp: string | null;
       customer_email: string | null;
       customer_city: string | null;
     } | undefined;
@@ -66,34 +69,19 @@ export async function GET(
       return NextResponse.json({ error: 'Quotation not found' }, { status: 404 });
     }
 
-    const items = await db.prepare(`
-      SELECT * FROM quotation_items WHERE quotation_id = ? ORDER BY id ASC
-    `).all(id);
-
-    const itemsWithCategoryIcon = items.map((item: {
-      category: string;
-      description: string;
-      details: string | null;
-      quantity: number;
-      amount: number;
-    }) => ({
-      ...item,
-    }));
-
-    const site = {
-      name: 'Safar Tours',
-      phone: '+91 98765 43210',
-      email: 'info@safartour.in',
-      address: 'Mall Road, Darjeeling, West Bengal',
-    };
+    const items = await db.prepare(
+      'SELECT category, description, details, quantity, amount FROM quotation_items WHERE quotation_id = ? ORDER BY id ASC'
+    ).all(id) as Array<{ category: string; description: string; details: string | null; quantity: number; amount: number }>;
 
     const pdfBuffer = await generateQuotationPDF({
       reference: quotation.reference,
       date: quotation.quotation_date,
       validUntil: quotation.valid_until,
+      status: quotation.status,
       customer: {
         name: quotation.customer_name,
         phone: quotation.customer_phone,
+        whatsapp: quotation.customer_whatsapp,
         email: quotation.customer_email,
         city: quotation.customer_city,
       },
@@ -105,27 +93,26 @@ export async function GET(
         total_pax: quotation.trip_total_pax,
         adults: quotation.trip_adults,
       },
-      items: itemsWithCategoryIcon as Array<{
-        category: string;
-        description: string;
-        details: string | null;
-        quantity: number;
-        amount: number;
-      }>,
+      items,
       subtotal: quotation.subtotal,
       discount: quotation.discount,
       tax: quotation.tax,
+      taxRate: quotation.tax_rate ?? 0,
       finalAmount: quotation.final_amount,
       notes: quotation.notes,
       terms: quotation.terms,
       prepared_by: quotation.prepared_by_name,
-      company: site,
     });
+
+    // Inline for preview (browser PDF viewer), attachment for download.
+    const inline = request.nextUrl.searchParams.get('inline') === '1';
+    const filename = `${quotation.reference}.pdf`;
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${quotation.reference}.pdf"`,
+        'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename="${filename}"`,
+        'Cache-Control': 'no-store',
       },
     });
   } catch (error) {

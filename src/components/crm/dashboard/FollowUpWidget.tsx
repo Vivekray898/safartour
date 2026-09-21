@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Calendar, AlertCircle, Clock, CheckCircle } from 'lucide-react';
 import { CRM_FOLLOWUP_TYPES } from '@/config/crm';
+import { formatCRMDate } from '@/lib/crm/format';
 
 interface FollowUpWidgetProps {
   overdue: Array<{
@@ -57,7 +58,7 @@ export default function FollowUpWidget({ overdue, today }: FollowUpWidgetProps) 
                     <div className="text-xs text-red-600 truncate">{f.destination || f.trip_reference} — {followupTypeLabels[f.followup_type] || f.followup_type}</div>
                   </div>
                   <div className="text-xs text-red-600 whitespace-nowrap">
-                    {new Date(f.scheduled_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                    {formatCRMDate(f.scheduled_date)}
                   </div>
                 </Link>
               ))}

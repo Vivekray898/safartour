@@ -3,9 +3,11 @@ import { getDb } from '@/lib/crm/db';
 import { notFound } from 'next/navigation';
 import { getActivitiesForCustomer } from '@/lib/crm/activity';
 import { formatCurrency } from '@/config/crm';
+import { formatCRMDate } from '@/lib/crm/format';
 import Link from 'next/link';
 import { Calendar, Users, Phone, Mail, MapPin, Clock, Repeat, DollarSign, CreditCard, FileText, Pencil } from 'lucide-react';
 import { CRMStatusBadge, CRMLeadSourceBadge } from '@/components/crm/common/CRMStatusBadge';
+import { CustomerActionsProvider, CustomerDetailActions, type CustomerRow } from '@/components/crm/entities/CustomerActions';
 
 export default async function CustomerPage({
   params,
@@ -79,12 +81,23 @@ export default async function CustomerPage({
   `).all(id);
 
   const activities = await getActivitiesForCustomer(Number(id));
+  const employees = await db.prepare('SELECT id, name FROM users WHERE is_active = 1 ORDER BY name ASC').all() as Array<{ id: number; name: string }>;
+  const canEdit = session.role === 'admin' || session.role === 'employee';
+  const customerRow: CustomerRow = {
+    id: customer.id, name: customer.name, phone: customer.phone, whatsapp: customer.whatsapp,
+    email: customer.email, city: customer.city, alt_phone: customer.alt_phone,
+    preferred_contact: customer.preferred_contact, company: customer.company,
+    company_contact_person: customer.company_contact_person,
+    assigned_employee_id: customer.assigned_employee_id,
+    archived: (customer as unknown as { archived: number }).archived ?? 0,
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-3">
+    <CustomerActionsProvider employees={employees} canEdit={canEdit}>
+    <div className="space-y-6 min-w-0">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
               <span className="text-xl font-bold text-green-700">{customer.name.charAt(0)}</span>
             </div>
@@ -99,7 +112,8 @@ export default async function CustomerPage({
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <CustomerDetailActions customer={customerRow} canEdit={canEdit} />
           <Link
             href={`/crm/leads/new?customerId=${customer.id}`}
             className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
@@ -274,7 +288,7 @@ export default async function CustomerPage({
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900">{trip.destination || '-'}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {trip.start_date ? new Date(trip.start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '-'}
+                        {formatCRMDate(trip.start_date, '—')}
                       </td>
                       <td className="px-4 py-3">
                         <CRMStatusBadge status={trip.status} size="sm" />
@@ -288,7 +302,7 @@ export default async function CustomerPage({
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500">
-                        {new Date(trip.updated_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        {formatCRMDate(trip.updated_at, '—')}
                       </td>
                     </tr>
                   ))
@@ -322,7 +336,7 @@ export default async function CustomerPage({
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-sm text-gray-700">{activity.description}</p>
                         <span className="text-xs text-gray-400">
-                          {new Date(activity.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {formatCRMDate(activity.created_at, '—')}
                         </span>
                       </div>
                       {activity.user_name && (
@@ -345,5 +359,6 @@ export default async function CustomerPage({
         </div>
       </div>
     </div>
+    </CustomerActionsProvider>
   );
 }

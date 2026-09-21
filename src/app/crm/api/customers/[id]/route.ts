@@ -159,6 +159,7 @@ export async function PUT(
     if (company !== undefined) { updates.push('company = ?'); values.push(company); }
     if (company_contact_person !== undefined) { updates.push('company_contact_person = ?'); values.push(company_contact_person); }
     if (assigned_employee_id !== undefined) { updates.push('assigned_employee_id = ?'); values.push(assigned_employee_id); }
+    if (body.archived !== undefined) { updates.push('archived = ?'); values.push(body.archived ? 1 : 0); }
 
     if (updates.length === 0) {
       return NextResponse.json({
@@ -219,11 +220,13 @@ export async function DELETE(
       );
     }
 
-    await db.prepare('UPDATE customers SET archived = 1, updated_at = datetime("now") WHERE id = ?').run(id);
+    const restore = request.nextUrl.searchParams.get('restore') === '1';
+
+    await db.prepare(`UPDATE customers SET archived = ?, updated_at = datetime("now") WHERE id = ?`).run(restore ? 0 : 1, id);
 
     return NextResponse.json({
       ok: true,
-      message: 'Customer archived',
+      message: restore ? 'Customer restored' : 'Customer archived',
     });
   } catch (error) {
     console.error('Delete customer error:', error);

@@ -1,5 +1,6 @@
 import { getSession, requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
+import { formatCRMDate } from '@/lib/crm/format';
 import Link from 'next/link';
 import { CheckSquare } from 'lucide-react';
 
@@ -141,7 +142,7 @@ export default async function TasksPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {task.due_date ? new Date(task.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '-'}
+                      {formatCRMDate(task.due_date, '—')}
                     </td>
                   </tr>
                 ))

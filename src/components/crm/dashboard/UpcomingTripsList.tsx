@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Calendar, Users, Car, Clock } from 'lucide-react';
 import { formatCurrency } from '@/config/crm';
+import { formatCRMDate } from '@/lib/crm/format';
 import { CRMStatusBadge } from '@/components/crm/common/CRMStatusBadge';
 
 interface UpcomingTripsListProps {
@@ -21,10 +22,7 @@ interface UpcomingTripsListProps {
 }
 
 export default function UpcomingTripsList({ trips }: UpcomingTripsListProps) {
-  const formatDate = (date: string | null) => {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-  };
+  const formatDate = (date: string | null) => formatCRMDate(date, 'N/A');
 
   const getVehicleLabel = (vehicle: string | null) => {
     if (!vehicle) return 'Not assigned';

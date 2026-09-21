@@ -1,9 +1,11 @@
 import { getSession, requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
+import { getCompanySettings } from '@/lib/crm/settings';
+import { formatCRMDate, formatCRMDateRange } from '@/lib/crm/format';
 import { notFound } from 'next/navigation';
-import { CRM_QUOTATION_STATUSES } from '@/config/crm';
 import { CRMStatusBadge } from '@/components/crm/common/CRMStatusBadge';
 import { formatCurrency } from '@/config/crm';
+import { QuotationActionsProvider, QuotationDetailActions, type QuotationListRow } from '@/components/crm/entities/QuotationActions';
 import Link from 'next/link';
 import { FileText, Download, MessageSquare, Mail, ExternalLink } from 'lucide-react';
 
@@ -45,10 +47,16 @@ export default async function QuotationPage({
     SELECT * FROM quotation_items WHERE quotation_id = ? ORDER BY id ASC
   `).all(id);
 
-  const trip = await db.prepare('SELECT * FROM trips WHERE id = ?').get(quotation.trip_id);
+  const settings = await getCompanySettings();
+  const gstLabel = ((quotation as { tax_rate?: number }).tax_rate ?? 0) > 0
+    ? `GST @ ${(quotation as { tax_rate?: number }).tax_rate}%`
+    : 'Tax';
+  const canEdit = session.role === 'admin' || session.role === 'employee';
+  const forActions = { id: quotation.id, reference: quotation.reference, status: quotation.status, final_amount: quotation.final_amount, trip_id: quotation.trip_id };
 
   return (
-    <div className="space-y-6">
+    <QuotationActionsProvider canEdit={canEdit}>
+    <div className="space-y-6 min-w-0">
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3">
@@ -59,10 +67,19 @@ export default async function QuotationPage({
           <h1 className="text-2xl font-bold text-gray-900 mt-3">Quotation</h1>
           <p className="text-gray-500 mt-1">For trip {quotation.trip_reference}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <a
+            href={`/crm/api/quotations/${id}/pdf?inline=1`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 bg-white border border-gray-200 hover:border-green-500 text-gray-700 hover:text-green-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            <FileText className="w-4 h-4" />
+            Preview PDF
+          </a>
           <a
             href={`/crm/api/quotations/${id}/pdf`}
-            className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            className="inline-flex items-center justify-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
             <Download className="w-4 h-4" />
             Download PDF
@@ -71,7 +88,7 @@ export default async function QuotationPage({
             href={`https://wa.me/${quotation.customer_phone?.replace(/\D/g, '')}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            className="inline-flex items-center justify-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
             <MessageSquare className="w-4 h-4" />
             Send WhatsApp
@@ -86,11 +103,11 @@ export default async function QuotationPage({
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="text-xs text-gray-500 uppercase tracking-wider font-medium mb-1 block">Date</label>
-                <p className="text-gray-900">{new Date(quotation.quotation_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                <p className="text-gray-900">{formatCRMDate(quotation.quotation_date)}</p>
               </div>
               <div>
                 <label className="text-xs text-gray-500 uppercase tracking-wider font-medium mb-1 block">Valid Until</label>
-                <p className="text-gray-900">{quotation.valid_until ? new Date(quotation.valid_until).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Not set'}</p>
+                <p className="text-gray-900">{quotation.valid_until ? formatCRMDate(quotation.valid_until) : 'Not set'}</p>
               </div>
               <div>
                 <label className="text-xs text-gray-500 uppercase tracking-wider font-medium mb-1 block">Prepared By</label>
@@ -140,7 +157,7 @@ export default async function QuotationPage({
                   )}
                   {quotation.tax > 0 && (
                     <tr className="border-t border-gray-100">
-                      <td colSpan={3} className="px-4 py-2 text-right text-gray-600">Tax</td>
+                      <td colSpan={3} className="px-4 py-2 text-right text-gray-600">{gstLabel}</td>
                       <td colSpan={2} className="px-4 py-2 text-right text-gray-600 font-medium">{formatCurrency(quotation.tax)}</td>
                     </tr>
                   )}
@@ -214,10 +231,7 @@ export default async function QuotationPage({
               {quotation.trip_start_date && (
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-sm text-gray-500">Travel Dates</span>
-                  <span className="text-sm text-gray-900">
-                    {new Date(quotation.trip_start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                    {quotation.trip_end_date ? ' - ' + new Date(quotation.trip_end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''}
-                  </span>
+                  <span className="text-sm text-gray-900">{formatCRMDateRange(quotation.trip_start_date, quotation.trip_end_date)}</span>
                 </div>
               )}
               {quotation.trip_total_pax && (
@@ -230,32 +244,15 @@ export default async function QuotationPage({
           </div>
 
           <div className="bg-gray-100 rounded-lg p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm text-gray-500">Final Amount</p>
-                <p className="text-2xl font-bold text-green-700">{formatCurrency(quotation.final_amount || 0)}</p>
-              </div>
-              <a
-                href={`/crm/api/quotations/${id}/pdf`}
-                className="flex items-center gap-2 bg-white border border-gray-200 hover:border-green-500 px-4 py-2 rounded-lg text-sm font-medium text-green-700 hover:text-green-800 transition-colors"
-              >
-                <FileText className="w-4 h-4" />
-                Preview
-              </a>
+            <div className="mb-4">
+              <p className="text-sm text-gray-500">Final Amount</p>
+              <p className="text-2xl font-bold text-green-700">{formatCurrency(quotation.final_amount || 0)}</p>
             </div>
-            <div className="space-y-2">
-              <a
-                href={`/crm/api/quotations/${id}/pdf`}
-                download={`${quotation.reference}.pdf`}
-                className="flex w-full items-center justify-center gap-2 bg-white border border-gray-200 hover:border-green-500 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:text-green-700 transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                Download PDF
-              </a>
-            </div>
+            <QuotationDetailActions quotation={forActions} canEdit={canEdit} />
           </div>
         </div>
       </div>
     </div>
+    </QuotationActionsProvider>
   );
 }

@@ -4,6 +4,7 @@ import { CRMLeadSourceBadge, CRMStatusBadge } from '@/components/crm/common/CRMS
 import CRMFilterBar from '@/components/crm/common/CRMFilterBar';
 import CRMPagination from '@/components/crm/common/CRMPagination';
 import { formatCurrency } from '@/config/crm';
+import { formatCRMDate } from '@/lib/crm/format';
 import Link from 'next/link';
 import { Plus, Filter } from 'lucide-react';
 
@@ -220,7 +221,7 @@ export default async function LeadsPage({
                       {lead.destination || '-'}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {lead.start_date ? new Date(lead.start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '-'}
+                      {formatCRMDate(lead.start_date, '—')}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900">
                       {lead.total_pax || 0}
@@ -253,7 +254,7 @@ export default async function LeadsPage({
                       <CRMLeadSourceBadge source={lead.lead_source} />
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">
-                      {new Date(lead.updated_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {formatCRMDate(lead.updated_at, '—')}
                     </td>
                   </tr>
                 ))

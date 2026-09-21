@@ -1,6 +1,7 @@
 import { getSession, requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
 import { requireRole } from '@/lib/crm/auth';
+import { formatCRMDate } from '@/lib/crm/format';
 import { CRMStatusBadge } from '@/components/crm/common/CRMStatusBadge';
 import { formatCurrency } from '@/config/crm';
 import MetricCard from '@/components/crm/dashboard/MetricCard';
@@ -162,7 +163,7 @@ export default async function DashboardPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500">{new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <p className="text-sm text-gray-500">{formatCRMDate(new Date())}</p>
         </div>
         <div className="flex items-center gap-2">
           <Link

@@ -1,6 +1,7 @@
 import { getSession, requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
 import { CRM_FOLLOWUP_TYPES } from '@/config/crm';
+import { formatCRMDate } from '@/lib/crm/format';
 import Link from 'next/link';
 import { Calendar, AlertCircle, Clock } from 'lucide-react';
 
@@ -166,7 +167,7 @@ export default async function FollowupsPage({
                     <tr key={f.id} className={`hover:bg-gray-50 transition-colors ${isOverdue ? 'bg-red-50' : isToday ? 'bg-amber-50' : ''}`}>
                       <td className="px-4 py-3">
                         <span className="text-sm text-gray-900">
-                          {new Date(f.scheduled_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {formatCRMDate(f.scheduled_date, '—')}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{f.scheduled_time || '-'}</td>

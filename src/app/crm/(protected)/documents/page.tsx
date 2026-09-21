@@ -1,6 +1,8 @@
 import { getSession, requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
 import { CRM_DOCUMENT_TYPES } from '@/config/crm';
+import { formatCRMDate } from '@/lib/crm/format';
+import CRMEmptyState from '@/components/crm/common/CRMEmptyState';
 import Link from 'next/link';
 import { FileText, Download } from 'lucide-react';
 
@@ -61,11 +63,12 @@ export default async function DocumentsPage() {
             <tbody className="divide-y divide-gray-100">
               {documents.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center">
-                    <div className="text-gray-400">
-                      <FileText className="w-8 h-8 mx-auto mb-2" />
-                      <p className="text-sm font-medium">No documents uploaded</p>
-                    </div>
+                  <td colSpan={7} className="px-0 py-0">
+                    <CRMEmptyState
+                      icon={FileText}
+                      title="No documents uploaded"
+                      description="ID proofs, tickets, vouchers and other trip documents uploaded from a trip's page will appear here."
+                    />
                   </td>
                 </tr>
               ) : (
@@ -97,7 +100,7 @@ export default async function DocumentsPage() {
                     <td className="px-4 py-3 text-sm text-gray-900">{doc.customer_name || doc.trip_reference || 'No customer'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{doc.uploaded_by_name || 'Unknown'}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">
-                      {new Date(doc.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {formatCRMDate(doc.created_at, '—')}
                     </td>
                     <td className="px-4 py-3 text-sm text-right text-gray-600">
                       {(doc.file_size || 0) > 1024 * 1024

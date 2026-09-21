@@ -139,10 +139,57 @@ export async function PUT(
       metadata.tax = body.tax;
     }
 
+    if (body.tax_rate !== undefined) {
+      updates.set('tax_rate', body.tax_rate);
+      metadata.tax_rate = body.tax_rate;
+    }
+
+    // Full item-set replacement: delete + re-insert inside the same update.
+    let replacementItems: Array<{ category: string; description: string; details: string | null; quantity: number; amount: number }> | null = null;
+    if (Array.isArray(body.items)) {
+      for (const item of body.items) {
+        if (!item || typeof item.description !== 'string' || !item.description.trim()) {
+          return NextResponse.json({ error: 'Every item needs a description' }, { status: 400 });
+        }
+      }
+      replacementItems = body.items.map((item: { category?: string; description: string; details?: string | null; quantity?: number; amount?: number }) => ({
+        category: ['hotel', 'transport', 'sightseeing', 'other'].includes(item.category) ? item.category : 'other',
+        description: item.description.trim(),
+        details: item.details ?? null,
+        quantity: Math.max(1, Math.round(Number(item.quantity) || 1)),
+        amount: Math.max(0, Math.round(Number(item.amount) || 0)),
+      }));
+    }
+
+    // Recompute money when subtotal/discount/tax rate change. When items are
+    // replaced, subtotal comes from the new items; a supplied tax_rate always
+    // recomputes the tax line so PDF stays consistent with stored amounts.
+    const effectiveDiscount = body.discount !== undefined ? body.discount : quotation.discount;
+    let effectiveTax: number;
+    const effectiveTaxRate = body.tax_rate !== undefined ? body.tax_rate : (quotation as { tax_rate?: number }).tax_rate ?? 0;
+    if (replacementItems) {
+      const newSubtotal = replacementItems.reduce((sum, i) => sum + i.amount * i.quantity, 0);
+      updates.set('subtotal', newSubtotal);
+      effectiveTax = effectiveTaxRate > 0
+        ? Math.round(Math.max(0, newSubtotal - effectiveDiscount) * effectiveTaxRate / 100)
+        : (body.tax !== undefined ? body.tax : 0);
+      updates.set('tax', effectiveTax);
+    } else {
+      const effectiveSubtotal = (quotation as { subtotal: number }).subtotal;
+      effectiveTax = effectiveTaxRate > 0
+        ? Math.round(Math.max(0, effectiveSubtotal - effectiveDiscount) * effectiveTaxRate / 100)
+        : (body.tax !== undefined ? body.tax : quotation.tax);
+      if (body.tax_rate !== undefined || body.tax !== undefined) {
+        updates.set('tax', effectiveTax);
+      }
+    }
+
     const newFinalAmount = calculateFinalAmount(
-      quotation.subtotal,
-      body.discount !== undefined ? body.discount : quotation.discount,
-      body.tax !== undefined ? body.tax : quotation.tax
+      replacementItems
+        ? (updates.get('subtotal') as number)
+        : (quotation as { subtotal: number }).subtotal,
+      effectiveDiscount,
+      effectiveTax
     );
 
     if (newFinalAmount !== quotation.final_amount) {
@@ -165,8 +212,8 @@ export async function PUT(
         const newRef = await nextReference('quotations', 'QT');
 
         await db.prepare(`
-          INSERT INTO quotations (reference, trip_id, version, status, quotation_date, valid_until, prepared_by, subtotal, discount, tax, final_amount, notes, terms)
-          SELECT ?, t.id, ?, 'draft', datetime('now'), q.valid_until, q.prepared_by, q.subtotal, q.discount, q.tax, q.final_amount, q.notes, q.terms
+          INSERT INTO quotations (reference, trip_id, version, status, quotation_date, valid_until, prepared_by, subtotal, discount, tax, tax_rate, final_amount, notes, terms)
+          SELECT ?, t.id, ?, 'draft', datetime('now'), q.valid_until, q.prepared_by, q.subtotal, q.discount, q.tax, q.tax_rate, q.final_amount, q.notes, q.terms
           FROM quotations q JOIN trips t ON q.trip_id = t.id WHERE q.id = ?
         `).run(newRef, newVersion, id);
 
@@ -182,6 +229,19 @@ export async function PUT(
     }
 
     await db.prepare(`UPDATE quotations SET ${setClause}, updated_at = datetime('now') WHERE id = ?`).run(...values, id);
+
+    if (replacementItems) {
+      await db.prepare('DELETE FROM quotation_items WHERE quotation_id = ?').run(id);
+      if (replacementItems.length > 0) {
+        const insertItem = await db.prepare(`
+          INSERT INTO quotation_items (quotation_id, category, description, details, quantity, amount)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `);
+        for (const item of replacementItems) {
+          await insertItem.run(id, item.category, item.description, item.details, item.quantity, item.amount);
+        }
+      }
+    }
 
     await logQuotationAction(
       quotation.trip_id,
@@ -247,9 +307,20 @@ export async function DELETE(
     }
     const db = getDb();
 
-    const quotation = await db.prepare('SELECT * FROM quotations WHERE id = ?').get(id);
+    const quotation = await db.prepare('SELECT * FROM quotations WHERE id = ?').get(id) as {
+      id: number; reference: string; status: string; trip_id: number; final_amount: number;
+    } | undefined;
     if (!quotation) {
       return NextResponse.json({ error: 'Quotation not found' }, { status: 404 });
+    }
+
+    // Quotations with payments recorded against the trip's history are
+    // financial records — archive-style protection instead of hard delete.
+    // Only empty drafts are hard-deleted.
+    if (quotation.status !== 'draft' || quotation.final_amount > 0) {
+      return NextResponse.json({
+        error: 'Only empty draft quotations can be deleted. Mark it cancelled instead to keep the history.',
+      }, { status: 409 });
     }
 
     await db.prepare('DELETE FROM quotations WHERE id = ?').run(id);
