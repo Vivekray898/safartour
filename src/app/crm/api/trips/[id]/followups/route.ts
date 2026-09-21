@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, requireApiUser } from '@/lib/crm/auth';
-import { getDb } from '@/lib/crm/db';
+import { getDb, parseId } from '@/lib/crm/db';
 import { logFollowUp } from '@/lib/crm/activity';
 
 export async function GET(
@@ -12,7 +12,11 @@ export async function GET(
     if (!session) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
-    const { id } = await params;
+    const { id: idParam } = await params;
+    const id = parseId(idParam);
+    if (id === null) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    }
     const db = getDb();
 
     const followups = await db.prepare(`
@@ -42,7 +46,11 @@ export async function POST(
     if (!session) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
-    const { id } = await params;
+    const { id: idParam } = await params;
+    const id = parseId(idParam);
+    if (id === null) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    }
     const body = await request.json();
     const db = getDb();
 

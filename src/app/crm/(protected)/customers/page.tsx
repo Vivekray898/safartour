@@ -1,5 +1,7 @@
-import { getSession, requireAuth } from '@/lib/crm/auth';
+import { requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
+import CRMFilterBar from '@/components/crm/common/CRMFilterBar';
+import CRMPagination from '@/components/crm/common/CRMPagination';
 import Link from 'next/link';
 import { Plus, Search } from 'lucide-react';
 
@@ -51,7 +53,7 @@ export default async function CustomersPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
           <p className="text-sm text-gray-500">{totalResult.count} total customers</p>
@@ -74,21 +76,12 @@ export default async function CustomersPage({
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-4 border-b border-gray-100">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search customers..."
-              defaultValue={search}
-              onChange={(e) => {
-                window.location.href = `/crm/customers${search ? `?search=${search}` : ''}`;
-              }}
-              className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-          </div>
-        </div>
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <CRMFilterBar
+          basePath="/crm/customers"
+          searchValue={search}
+          searchPlaceholder="Search customers..."
+        />
 
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -164,29 +157,15 @@ export default async function CustomersPage({
           </table>
         </div>
 
-        {customers.length > 0 && totalResult.count > limit && (
-          <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
-            <p className="text-sm text-gray-500">
-              Showing {(page - 1) * limit + 1} to {Math.min(page * limit, totalResult.count)} of {totalResult.count} customers
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => window.location.href = `/crm/customers?page=${page - 1}${search ? `&search=${search}` : ''}`}
-                disabled={page === 1}
-                className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                Previous
-              </button>
-              <span className="text-sm text-gray-500">Page {page}</span>
-              <button
-                onClick={() => window.location.href = `/crm/customers?page=${page + 1}${search ? `&search=${search}` : ''}`}
-                disabled={page * limit >= totalResult.count}
-                className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+        {customers.length > 0 && (
+          <CRMPagination
+            basePath="/crm/customers"
+            page={page}
+            totalCount={totalResult.count}
+            limit={limit}
+            params={search ? { search } : {}}
+            label="customers"
+          />
         )}
       </div>
     </div>

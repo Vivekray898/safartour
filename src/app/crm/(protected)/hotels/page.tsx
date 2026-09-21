@@ -1,6 +1,7 @@
-import { getSession, requireRole } from '@/lib/crm/auth';
+import { requireRole } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
-import { CRM_HOTEL_CATEGORIES } from '@/config/crm';
+import CRMFilterBar from '@/components/crm/common/CRMFilterBar';
+import Link from 'next/link';
 import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 
 export default async function HotelsPage({
@@ -40,7 +41,7 @@ export default async function HotelsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Hotels</h1>
           <p className="text-sm text-gray-500">{totalResult.count} hotels in database</p>
@@ -51,21 +52,12 @@ export default async function HotelsPage({
         </button>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-4 border-b border-gray-100">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search hotels..."
-              defaultValue={search}
-              onChange={(e) => {
-                window.location.href = `/crm/hotels${search ? `?search=${search}` : ''}`;
-              }}
-              className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-          </div>
-        </div>
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <CRMFilterBar
+          basePath="/crm/hotels"
+          searchValue={search}
+          searchPlaceholder="Search hotels..."
+        />
 
         <div className="overflow-x-auto">
           <table className="w-full">

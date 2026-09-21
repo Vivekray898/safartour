@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, requireApiUser } from '@/lib/crm/auth';
 import { getActivitiesForTrip } from '@/lib/crm/activity';
+import { parseId } from '@/lib/crm/db';
 
 export async function GET(
   request: NextRequest,
@@ -11,9 +12,13 @@ export async function GET(
     if (!session) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
-    const { id } = await params;
+    const { id: idParam } = await params;
+    const id = parseId(idParam);
+    if (id === null) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    }
 
-    const activities = await getActivitiesForTrip(Number(id), 100);
+    const activities = await getActivitiesForTrip(id, 100);
 
     return NextResponse.json({ ok: true, activities });
   } catch (error) {

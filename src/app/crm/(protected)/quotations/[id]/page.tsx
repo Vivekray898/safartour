@@ -1,5 +1,6 @@
 import { getSession, requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
+import { notFound } from 'next/navigation';
 import { CRM_QUOTATION_STATUSES } from '@/config/crm';
 import { CRMStatusBadge } from '@/components/crm/common/CRMStatusBadge';
 import { formatCurrency } from '@/config/crm';
@@ -12,7 +13,10 @@ export default async function QuotationPage({
   params: Promise<{ id: string }>;
 }) {
   const session = await requireAuth();
-  const { id } = await params;
+  const { id: idParam } = await params;
+  // Non-numeric segments must never reach Postgres as an integer id.
+  const id = Number(idParam);
+  if (!Number.isInteger(id) || id <= 0) notFound();
   const db = getDb();
 
   const quotation = await db.prepare(`
@@ -195,20 +199,20 @@ export default async function QuotationPage({
           <div className="bg-white rounded-lg border border-gray-200 p-5">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Trip Reference</h2>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <span className="text-sm text-gray-500">Trip Ref</span>
                 <Link href={`/crm/leads/${quotation.trip_id}`} className="text-green-700 font-medium hover:underline">
                   {quotation.trip_reference}
                 </Link>
               </div>
               {quotation.trip_destination && (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-sm text-gray-500">Destination</span>
                   <span className="text-sm text-gray-900">{quotation.trip_destination}</span>
                 </div>
               )}
               {quotation.trip_start_date && (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-sm text-gray-500">Travel Dates</span>
                   <span className="text-sm text-gray-900">
                     {new Date(quotation.trip_start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
@@ -217,7 +221,7 @@ export default async function QuotationPage({
                 </div>
               )}
               {quotation.trip_total_pax && (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-sm text-gray-500">Travelers</span>
                   <span className="text-sm text-gray-900">{quotation.trip_total_pax} pax</span>
                 </div>

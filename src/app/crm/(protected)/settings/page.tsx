@@ -119,7 +119,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
           <p className="text-sm text-gray-500">Manage CRM settings and users</p>
@@ -257,15 +257,15 @@ export default function SettingsPage() {
             <div className="p-4 bg-gray-50 rounded-lg">
               <h3 className="text-sm font-medium text-gray-900 mb-2">General</h3>
               <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span>Currency</span>
                   <span className="font-medium text-gray-900">INR (₹)</span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span>Date Format</span>
                   <span className="font-medium text-gray-900">DD/MM/YYYY</span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span>Timezone</span>
                   <span className="font-medium text-gray-900">Asia/Kolkata (IST)</span>
                 </div>
@@ -275,11 +275,11 @@ export default function SettingsPage() {
             <div className="p-4 bg-gray-50 rounded-lg">
               <h3 className="text-sm font-medium text-gray-900 mb-2">Security</h3>
               <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-gray-600">Session Timeout</span>
                   <span className="font-medium text-gray-900">30 days</span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-gray-600">Maximum File Size</span>
                   <span className="font-medium text-gray-900">10 MB</span>
                 </div>
@@ -289,11 +289,11 @@ export default function SettingsPage() {
             <div className="p-4 bg-gray-50 rounded-lg">
               <h3 className="text-sm font-medium text-gray-900 mb-2">Notifications</h3>
               <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span>Require Lost Reason</span>
                   <span className="font-medium text-gray-900">Enabled</span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span>Require Cancellation Reason</span>
                   <span className="font-medium text-gray-900">Enabled</span>
                 </div>

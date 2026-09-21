@@ -152,7 +152,7 @@ export default async function ReportsPage() {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <span className="text-gray-600">Enquiries</span>
                 <span className="font-bold text-gray-900">{conversionReport.enquiries.count}</span>
               </div>
@@ -161,7 +161,7 @@ export default async function ReportsPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <span className="text-gray-600">Quotations Sent</span>
                 <span className="font-bold text-gray-900">{conversionReport.quotations.count}</span>
               </div>
@@ -171,7 +171,7 @@ export default async function ReportsPage() {
               <p className="text-xs text-gray-500">{conversionReport.enquiries.count > 0 ? Math.round((conversionReport.quotations.count / conversionReport.enquiries.count) * 100) : 0}% conversion rate</p>
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <span className="text-gray-600">Bookings</span>
                 <span className="font-bold text-gray-900">{conversionReport.bookings.count}</span>
               </div>

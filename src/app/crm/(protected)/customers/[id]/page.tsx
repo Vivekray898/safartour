@@ -1,5 +1,6 @@
 import { getSession, requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
+import { notFound } from 'next/navigation';
 import { getActivitiesForCustomer } from '@/lib/crm/activity';
 import { formatCurrency } from '@/config/crm';
 import Link from 'next/link';
@@ -12,7 +13,10 @@ export default async function CustomerPage({
   params: Promise<{ id: string }>;
 }) {
   const session = await requireAuth();
-  const { id } = await params;
+  const { id: idParam } = await params;
+  // Non-numeric segments must never reach Postgres as an integer id.
+  const id = Number(idParam);
+  if (!Number.isInteger(id) || id <= 0) notFound();
   const db = getDb();
 
   const customer = await db.prepare(`
@@ -185,11 +189,11 @@ export default async function CustomerPage({
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="text-gray-500 text-sm mb-3">Financial Summary</div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <span className="text-sm text-gray-600">Total Quoted</span>
                 <span className="text-sm font-semibold text-gray-900">{formatCurrency(customer.total_quoted)}</span>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <span className="text-sm text-gray-600">Total Paid</span>
                 <span className="text-sm font-semibold text-green-700">{formatCurrency(customer.total_paid)}</span>
               </div>
@@ -315,7 +319,7 @@ export default async function CustomerPage({
                       )}
                     </div>
                     <div className="flex-1 pb-4">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-sm text-gray-700">{activity.description}</p>
                         <span className="text-xs text-gray-400">
                           {new Date(activity.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}

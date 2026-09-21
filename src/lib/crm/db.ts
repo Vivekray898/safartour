@@ -173,6 +173,18 @@ function prepare(query: string): CrmStatement {
 }
 
 /**
+ * Parse a route parameter as a positive integer database id.
+ * Returns null for anything else so callers can 404/400 instead of letting
+ * Postgres throw `invalid input syntax for type integer` (e.g. /crm/leads/new
+ * colliding with /crm/leads/[id]).
+ */
+export function parseId(value: string | undefined | null): number | null {
+  if (!value) return null;
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+/**
  * Generate the next sequential reference (e.g. ST-2026-00006) for a table.
  * Uses the current max reference number rather than a per-year reset so
  * references are unique for the table's lifetime; a UNIQUE constraint backs

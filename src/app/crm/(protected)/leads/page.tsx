@@ -1,9 +1,11 @@
-import { getSession, requireAuth } from '@/lib/crm/auth';
+import { requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
 import { CRMLeadSourceBadge, CRMStatusBadge } from '@/components/crm/common/CRMStatusBadge';
+import CRMFilterBar from '@/components/crm/common/CRMFilterBar';
+import CRMPagination from '@/components/crm/common/CRMPagination';
 import { formatCurrency } from '@/config/crm';
 import Link from 'next/link';
-import { Plus, Search, Filter, ArrowUpDown } from 'lucide-react';
+import { Plus, Filter } from 'lucide-react';
 
 interface LeadRow {
   id: number;
@@ -40,6 +42,40 @@ export default async function LeadsPage({
   const limit = 20;
   const offset = (page - 1) * limit;
 
+  // Shared WHERE conditions so the list query and the count query stay in
+  // sync (pagination totals must respect the active filters).
+  const conditions: string[] = ['t.archived = 0'];
+  const filterParams: (string | number)[] = [];
+
+  if (searchFilter) {
+    conditions.push(`(t.reference LIKE ? OR c.name LIKE ? OR c.phone LIKE ? OR t.destination LIKE ?)`);
+    const s = `%${searchFilter}%`;
+    filterParams.push(s, s, s, s);
+  }
+
+  if (statusFilter) {
+    if (statusFilter === 'active') {
+      conditions.push(`t.status IN ('new', 'contacted', 'requirement_collected', 'quotation_preparing', 'quotation_sent', 'negotiation', 'booking_pending')`);
+    } else if (statusFilter === 'booked') {
+      conditions.push(`t.status IN ('booked', 'trip_ongoing', 'completed')`);
+    } else {
+      conditions.push(`t.status = ?`);
+      filterParams.push(statusFilter);
+    }
+  }
+
+  if (priorityFilter) {
+    conditions.push(`t.priority = ?`);
+    filterParams.push(priorityFilter);
+  }
+
+  if (sourceFilter) {
+    conditions.push(`t.lead_source = ?`);
+    filterParams.push(sourceFilter);
+  }
+
+  const whereSql = `WHERE ${conditions.join(' AND ')}`;
+
   let query = `
     SELECT t.id, t.reference, t.status, t.priority, t.lead_source,
       t.destination, t.start_date, t.total_pax,
@@ -51,54 +87,23 @@ export default async function LeadsPage({
     FROM trips t
     LEFT JOIN customers c ON t.customer_id = c.id
     LEFT JOIN users u ON t.assigned_employee_id = u.id
-    WHERE t.archived = 0
+    ${whereSql}
   `;
 
-  const filterParams: (string | number)[] = [];
-
-  if (searchFilter) {
-    query += ` AND (t.reference LIKE ? OR c.name LIKE ? OR c.phone LIKE ? OR t.destination LIKE ?)`;
-    const s = `%${searchFilter}%`;
-    filterParams.push(s, s, s, s);
-  }
-
-  if (statusFilter) {
-    if (statusFilter === 'active') {
-      query += ` AND t.status IN ('new', 'contacted', 'requirement_collected', 'quotation_preparing', 'quotation_sent', 'negotiation', 'booking_pending')`;
-    } else if (statusFilter === 'booked') {
-      query += ` AND t.status IN ('booked', 'trip_ongoing', 'completed')`;
-    } else {
-      query += ` AND t.status = ?`;
-      filterParams.push(statusFilter);
-    }
-  }
-
-  if (priorityFilter) {
-    query += ` AND t.priority = ?`;
-    filterParams.push(priorityFilter);
-  }
-
-  if (sourceFilter) {
-    query += ` AND t.lead_source = ?`;
-    filterParams.push(sourceFilter);
-  }
-
+  const listParams = [...filterParams, limit, offset];
   query += ' ORDER BY t.updated_at DESC LIMIT ? OFFSET ?';
-  filterParams.push(limit, offset);
 
-  const leads = await db.prepare(query).all(...filterParams) as LeadRow[];
+  const leads = await db.prepare(query).all(...listParams) as LeadRow[];
 
-  const countQuery = `
+  const totalResult = await db.prepare(`
     SELECT COUNT(*) as count FROM trips t
     LEFT JOIN customers c ON t.customer_id = c.id
-    WHERE t.archived = 0
-  `;
-
-  const totalResult = await db.prepare(countQuery).get() as { count: number };
+    ${whereSql}
+  `).get(...filterParams) as { count: number };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
           <p className="text-sm text-gray-500">{totalResult.count} total leads</p>
@@ -112,83 +117,61 @@ export default async function LeadsPage({
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-4 border-b border-gray-100 flex flex-wrap gap-3 items-center">
-          <div className="relative flex-1 min-w-[200px] max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search leads..."
-              defaultValue={searchFilter}
-              name="search"
-              className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-          </div>
-
-          <select
-            defaultValue={statusFilter}
-            onChange={(e) => {
-              const form = e.currentTarget.form;
-              if (form) form.submit();
-            }}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
-          >
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="new">New</option>
-            <option value="contacted">Contacted</option>
-            <option value="quotation_sent">Quotation Sent</option>
-            <option value="negotiation">Negotiation</option>
-            <option value="booked">Booked</option>
-            <option value="completed">Completed</option>
-            <option value="lost">Lost</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-
-          <select
-            defaultValue={priorityFilter}
-            onChange={(e) => {
-              const form = e.currentTarget.form;
-              if (form) form.submit();
-            }}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
-          >
-            <option value="">All Priority</option>
-            <option value="urgent">Urgent</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-
-          <select
-            defaultValue={sourceFilter}
-            onChange={(e) => {
-              const form = e.currentTarget.form;
-              if (form) form.submit();
-            }}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
-          >
-            <option value="">All Sources</option>
-            <option value="website">Website</option>
-            <option value="whatsapp">WhatsApp</option>
-            <option value="call">Call</option>
-            <option value="walk_in">Walk-in</option>
-            <option value="referral">Referral</option>
-            <option value="google">Google</option>
-            <option value="facebook">Facebook</option>
-            <option value="instagram">Instagram</option>
-            <option value="existing_customer">Existing Customer</option>
-          </select>
-
-          {(statusFilter || priorityFilter || sourceFilter || searchFilter) && (
-            <Link
-              href="/crm/leads"
-              className="text-sm text-green-600 hover:text-green-700 font-medium"
-            >
-              Clear filters
-            </Link>
-          )}
-        </div>
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <CRMFilterBar
+          basePath="/crm/leads"
+          searchValue={searchFilter}
+          searchPlaceholder="Search leads..."
+          selects={[
+            {
+              name: 'status',
+              value: statusFilter,
+              label: 'Filter by status',
+              options: [
+                { value: '', label: 'All Status' },
+                { value: 'active', label: 'Active' },
+                { value: 'new', label: 'New' },
+                { value: 'contacted', label: 'Contacted' },
+                { value: 'quotation_sent', label: 'Quotation Sent' },
+                { value: 'negotiation', label: 'Negotiation' },
+                { value: 'booked', label: 'Booked' },
+                { value: 'completed', label: 'Completed' },
+                { value: 'lost', label: 'Lost' },
+                { value: 'cancelled', label: 'Cancelled' },
+              ],
+            },
+            {
+              name: 'priority',
+              value: priorityFilter,
+              label: 'Filter by priority',
+              options: [
+                { value: '', label: 'All Priority' },
+                { value: 'urgent', label: 'Urgent' },
+                { value: 'high', label: 'High' },
+                { value: 'medium', label: 'Medium' },
+                { value: 'low', label: 'Low' },
+              ],
+            },
+            {
+              name: 'source',
+              value: sourceFilter,
+              label: 'Filter by source',
+              options: [
+                { value: '', label: 'All Sources' },
+                { value: 'website', label: 'Website' },
+                { value: 'whatsapp', label: 'WhatsApp' },
+                { value: 'call', label: 'Call' },
+                { value: 'walk_in', label: 'Walk-in' },
+                { value: 'referral', label: 'Referral' },
+                { value: 'google', label: 'Google' },
+                { value: 'facebook', label: 'Facebook' },
+                { value: 'instagram', label: 'Instagram' },
+                { value: 'existing_customer', label: 'Existing Customer' },
+              ],
+            },
+          ]}
+          clearHref="/crm/leads"
+        />
 
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -279,29 +262,17 @@ export default async function LeadsPage({
           </table>
         </div>
 
-        {leads.length > 0 && totalResult.count > limit && (
-          <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
-            <p className="text-sm text-gray-500">
-              Showing {(page - 1) * limit + 1} to {Math.min(page * limit, totalResult.count)} of {totalResult.count} leads
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => window.location.href = `/crm/leads?page=${page - 1}${statusFilter ? `&status=${statusFilter}` : ''}${priorityFilter ? `&priority=${priorityFilter}` : ''}${sourceFilter ? `&source=${sourceFilter}` : ''}`}
-                disabled={page === 1}
-                className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                Previous
-              </button>
-              <span className="text-sm text-gray-500">Page {page}</span>
-              <button
-                onClick={() => window.location.href = `/crm/leads?page=${page + 1}${statusFilter ? `&status=${statusFilter}` : ''}${priorityFilter ? `&priority=${priorityFilter}` : ''}${sourceFilter ? `&source=${sourceFilter}` : ''}`}
-                disabled={page * limit >= totalResult.count}
-                className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+        {leads.length > 0 && (
+          <CRMPagination
+            basePath="/crm/leads"
+            page={page}
+            totalCount={totalResult.count}
+            limit={limit}
+            params={Object.fromEntries(
+              Object.entries({ status: statusFilter, priority: priorityFilter, source: sourceFilter, search: searchFilter }).filter(([, v]) => v)
+            )}
+            label="leads"
+          />
         )}
       </div>
     </div>

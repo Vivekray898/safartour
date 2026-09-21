@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, requireApiUser } from '@/lib/crm/auth';
-import { getDb } from '@/lib/crm/db';
+import { getDb, parseId } from '@/lib/crm/db';
 
 export async function GET(
   request: NextRequest,
@@ -11,7 +11,11 @@ export async function GET(
     if (!session) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
-    const { id } = await params;
+    const { id: idParam } = await params;
+    const id = parseId(idParam);
+    if (id === null) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    }
     const db = getDb();
 
     const quotations = await db.prepare(`

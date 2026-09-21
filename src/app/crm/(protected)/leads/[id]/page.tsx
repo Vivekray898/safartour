@@ -1,5 +1,6 @@
 import { getSession, requireAuth } from '@/lib/crm/auth';
 import { getDb } from '@/lib/crm/db';
+import { notFound } from 'next/navigation';
 import { CRMStatusBadge, CRMPriorityBadge, CRMLeadSourceBadge, CRMPaymentMethodBadge } from '@/components/crm/common/CRMStatusBadge';
 import { formatCurrency } from '@/config/crm';
 import { getActivitiesForTrip } from '@/lib/crm/activity';
@@ -12,7 +13,10 @@ export default async function TripPage({
   params: Promise<{ id: string }>;
 }) {
   const session = await requireAuth();
-  const { id } = await params;
+  const { id: idParam } = await params;
+  // `/crm/leads/new` and any other non-numeric segment must never reach Postgres.
+  const id = Number(idParam);
+  if (!Number.isInteger(id) || id <= 0) notFound();
   const db = getDb();
 
   const trip = await db.prepare(`
