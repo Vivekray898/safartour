@@ -241,9 +241,11 @@ breadcrumbs and back links.
 
 [quick/page.tsx](src/app/crm/(protected)/leads/quick/page.tsx) receives
 `data.trip.reference` (`"ST-2026-00006"`) and navigates to
-`` `/crm/leads/${tripRef}` ``. But [leads/[id]/page.tsx:21](src/app/crm/(protected)/leads/[id]/page.tsx#L21)
-does `const id = Number(idParam); if (!Number.isInteger(id) || id <= 0) notFound();`
-— so it **always 404s**. The page is also absent from the nav.
+`` `/crm/leads/${tripRef}` ``. But [leads/[id]/page.tsx:19](src/app/crm/(protected)/leads/[id]/page.tsx#L19)
+does `const id = Number(idParam)`, and
+[line 20](src/app/crm/(protected)/leads/[id]/page.tsx#L20) does
+`if (!Number.isInteger(id) || id <= 0) notFound();` — so it **always 404s**.
+The page is also absent from the nav.
 
 ### 4.3 The Documents feature has no interface
 
