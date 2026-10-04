@@ -353,10 +353,13 @@ CREATE POLICY "documents: crm write" ON documents
   FOR ALL TO authenticated USING (public.is_crm()) WITH CHECK (public.is_crm());
 
 -- drivers: staff read, admin write
+-- A driver sees their own row via `profile_id` (a uuid FK to profiles).
+-- NOTE: do NOT use `id = auth.uid()` here — `drivers.id` is SERIAL (integer),
+-- so that comparison raises "operator does not exist: integer = uuid".
 ALTER TABLE drivers ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "drivers: crm read" ON drivers;
 CREATE POLICY "drivers: crm read" ON drivers
-  FOR SELECT TO authenticated USING (public.is_crm() OR id = auth.uid() OR profile_id = auth.uid());
+  FOR SELECT TO authenticated USING (public.is_crm() OR profile_id = auth.uid());
 DROP POLICY IF EXISTS "drivers: admin write" ON drivers;
 CREATE POLICY "drivers: admin write" ON drivers
   FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());

@@ -79,6 +79,27 @@ for (const f of ['005_auth_profiles_rls.sql', '006_storage_and_seed_cleanup.sql'
     .map((line) => (line.trim().startsWith('--') ? '' : line))
     .join('\n')
 
+  // Tables this file creates itself (e.g. `profiles`) are not in 001-004, so
+  // fold them in before type checking. Without this, `profiles.id` looks
+  // unknown and the checker falsely matches it against `users.id` (serial).
+  const cols = new Map(existingCols)
+  for (const m of sql.matchAll(/CREATE TABLE IF NOT EXISTS\s+(\w+)\s*\(([\s\S]*?)\n\);/gi)) {
+    const [, table, body] = m
+    for (const rawLine of body.split('\n')) {
+      const line = rawLine.replace(/--.*$/, '').trim()
+      const c = line.match(
+        /^(\w+)\s+(TEXT|INTEGER|SERIAL|BIGINT|NUMERIC|BOOLEAN|DATE|TIMESTAMPTZ|JSONB|BYTEA|uuid|UUID)\b/i,
+      )
+      if (c) cols.set(`${table.toLowerCase()}.${c[1].toLowerCase()}`, c[2].toLowerCase())
+    }
+  }
+  // And this file's own ADD COLUMNs.
+  for (const m of sql.matchAll(
+    /ALTER TABLE\s+(\w+)\s+ADD COLUMN IF NOT EXISTS\s+(\w+)\s+(uuid|text|integer|bigint|boolean|timestamptz|jsonb|date|numeric)\b/gi,
+  )) {
+    cols.set(`${m[1].toLowerCase()}.${m[2].toLowerCase()}`, m[3].toLowerCase())
+  }
+
   const refs = new Set()
   const patterns = [
     /ALTER TABLE\s+([a-z_]+\.[a-z_]+|[a-z_]\w*)/gi,
@@ -135,11 +156,46 @@ for (const f of ['005_auth_profiles_rls.sql', '006_storage_and_seed_cleanup.sql'
   console.log(`  LOOP open/close: ${loopOpen}/${loopEnd}`)
   console.log(`  ADD COLUMN clashes: ${clashes.length ? clashes.join('; ') : '(none)'}`)
 
+  // auth.uid() is uuid. Any column compared with it MUST be uuid too,
+  // otherwise Postgres raises 42883 "operator does not exist: integer = uuid".
+  // Two separate bugs shipped this way: tasks.assigned_to (an existing INTEGER
+  // column) and drivers.id (SERIAL). This check makes both impossible.
+  const uidClashes = []
+  // Set of known table names, so `ON drivers` is recognised as a table context.
+  const knownTables = new Set([...cols.keys()].map((k) => k.split('.')[0]))
+  // Track the table each policy belongs to: `... ON <table>` starts a policy,
+  // and `FROM <table> <alias>` sets the alias for a subquery comparison.
+  let currentTable = null
+  let aliasTable = null
+  const lines = sql.split('\n')
+  for (const ln of lines) {
+    const onT = ln.match(/\bON\s+([a-z_]\w*)\s*(?:FOR|$|\s)/i)
+    if (onT && knownTables.has(onT[1].toLowerCase())) currentTable = onT[1].toLowerCase()
+    const al = ln.match(/\bFROM\s+([a-z_]\w*)\s+([a-z])\b/i)
+    if (al && knownTables.has(al[1].toLowerCase())) aliasTable = al[1].toLowerCase()
+
+    for (const m of ln.matchAll(/(\b([a-z])\.)?\b(\w+)\s*=\s*auth\.uid\(\)/gi)) {
+      const alias = m[2] ? m[2].toLowerCase() : null
+      const col = (m[3] || '').toLowerCase()
+      if (!col || col === 'auth') continue
+      const table = alias ? aliasTable : currentTable
+      if (!table) continue
+      const type = cols.get(table + '.' + col)
+      if (type && type !== 'uuid') {
+        uidClashes.push(
+          `${table}.${col} is ${type}, not uuid — comparing it to auth.uid() raises 42883`,
+        )
+      }
+    }
+  }
+
   if (unknown.length) problems++
   if (!dollarsOk) problems++
   if (doOpen !== endBlock) problems++
   if (loopOpen !== loopEnd) problems++
   if (clashes.length) problems++
+  console.log(`  auth.uid() type clashes: ${uidClashes.length ? uidClashes.join('; ') : '(none)'}`)
+  if (uidClashes.length) problems++
 }
 
 console.log(
