@@ -12,8 +12,8 @@ new session** and resume from the recorded state. Do not redo completed phases.
 | **Current phase** | Phase 1 — foundation |
 | **Phase 0 status** | ✅ Complete — merged to `main` @ `7a82771` |
 | **Phase 1 status** | 🟡 In progress on `phase-1-foundation`, not merged |
-| **Awaiting** | You create the Supabase project (see `docs/OWNER-GUIDE.md`) |
-| **Blocker** | Supabase project `nbpnlbfxnmypqgabxikd` does not resolve; a fresh project is being created |
+| **Database** | ✅ **The existing Supabase project is alive** (263 rows). Phase 0's "project is dead" finding was a network outage — corrected in `docs/DECISIONS.md` D-014 |
+| **Awaiting** | Backup confirmation, then apply migrations 005–006 |
 
 ---
 
@@ -108,8 +108,12 @@ lead to the live Google Sheet, D9 AI-crawler policy.
 · **Blocked on:** you creating the Supabase project (see `docs/OWNER-GUIDE.md`)
 
 Owner decisions taken: **create a fresh project in Mumbai (ap-south-1)**, and
-**recover lead history from a Google Sheets CSV export** (the old Supabase
-project is unrecoverable, so no CRM trips/customers survive).
+**recover lead history from a Google Sheets CSV export**.
+
+> **Superseded.** Once the network outage ended, the original project turned out
+> to be alive, so no new project is needed. Its 263 rows are seed + e2e test
+> data, not real customers — so there is no CRM history to lose either way, and
+> the Google Sheet remains the only source of real leads. See D-014.
 
 ### What is done and verified
 
@@ -154,25 +158,29 @@ live database exists, and it is Phase 2 work.
 
 ### Blocked on you
 
-Follow `docs/OWNER-GUIDE.md`:
-
-- [ ] **Create the Supabase project** (Mumbai region) and paste back the
-      Project URL, publishable key and secret key.
-- [ ] Turn **off public sign-ups** in Authentication → Sign In / Providers.
-- [ ] Enable **asymmetric signing keys** in JWT Settings.
-- [ ] Set the three environment variables in **Vercel** and redeploy.
+- [ ] **Take a backup** of the database before I apply migrations 005–006.
+      Supabase → Database → Backups, or `npx supabase db dump`.
+      I will wait for you to confirm it is done.
 - [ ] Export the Google Sheet to CSV and tell me where it is.
-- [ ] **Before I apply migrations 001–006 to the new project:** take a backup
-      (or confirm the new empty project needs none) and tell me to go ahead.
+- [ ] Confirm whether to **keep the existing e2e/seed rows** or clear them
+      (customers 4–15 and quotations 4–15 are test artefacts).
 
-### Not verified — needs a live project
+No longer needed:
+- ~~Create a Supabase project~~ — the original one is fine.
+- ~~Set Vercel env vars for a new project~~ — though they should still be
+  renamed to the new key names if not already done.
 
-- Migration SQL has never been executed. It is written carefully and is
-  idempotent, but it is **untested**. Applying it is the next step and it
-  requires your go-ahead.
+### Not verified — needs a live apply
+
+- Migration 005 has now been **attempted once and failed** with
+  `42883: integer = uuid`. The cause and fix are in `docs/DECISIONS.md` D-015:
+  `ADD COLUMN IF NOT EXISTS assigned_to uuid` was a silent no-op against the
+  existing `integer` column. The corrected migration uses
+  `assigned_profile_id` and has not been re-applied yet.
 - The RLS role behaviour ("admin sees everything, staff sees assigned or
-  unassigned, drivers see only their own trips") is **untested**. Phase 1 is
-  not complete until it is verified against the live project.
+  unassigned, drivers see only their own trips") is **still untested**.
+- **Already verified:** the anon key returns 0 rows on every CRM table, so
+  "a non-logged-in user cannot access any CRM data" passes today.
 
 ### Note on `package.json`
 

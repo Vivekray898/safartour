@@ -9,12 +9,35 @@
 
 ## 0. Executive summary
 
-The single most important finding is not in the plan:
+> ## ⚠️ CORRECTION (added after Phase 1 work)
+>
+> **This audit originally concluded the Supabase project was dead. That was
+> wrong.** The DNS failures that led to that conclusion were caused by a
+> network outage on the machine running the audit, not by a deleted project.
+>
+> Re-checked with the Supabase CLI on 2026-10-04:
+>
+> - `supabase projects list` → the project exists: **"safsr tour nextjs"**,
+>   `nbpnlbfxnmypqgabxikd`, Southeast Asia (Singapore), created 2026-09-20.
+> - It holds **263 rows**: 15 customers, 13 trips, 15 quotations,
+>   26 quotation_items, 11 payments, 11 followups, 10 tasks, 122 activities,
+>   7 hotels, 5 drivers, 5 suppliers, 2 users, 20 sessions.
+> - The API keys in `.env.local` are **valid** and working.
+>
+> **However:** on inspection, that data is *not* real business data. Customers
+> 1–3 are the `002_seed_data.sql` demo rows (Rohan Sharma, Priya Singh,
+> Amit Verma) and customers 4–15 are `E2E Renamed <timestamp>` rows created by
+> `scripts/e2e-crm.mjs`. The only 2 users are the seeded `admin123` accounts.
+>
+> So: **no new Supabase project is needed, and there is no real CRM history to
+> lose.** Real enquiries exist only in the Google Sheet and are recovered by
+> `scripts/import-sheets-leads.mjs`. The anon key already returns **0 rows** on
+> every CRM table, so the Phase 1 security gate is effectively already met.
+>
+> Everything below about the code is still accurate. Only the "no database"
+> conclusion and §2.1 change.
 
-> **The Supabase project this app is configured against no longer exists.**
-> `nbpnlbfxnmypqgabxikd.supabase.co` does not resolve in DNS, and the pooler
-> rejects the tenant. The CRM cannot reach a database today. Every
-> authenticated CRM page and API returns an error.
+The original (incorrect) finding was:
 
 | Plan hypothesis | Verdict | Evidence |
 |---|---|---|
@@ -24,6 +47,12 @@ The single most important finding is not in the plan:
 | 4. `admin123` seed + disk storage | **Confirmed** | [002_seed_data.sql](supabase/migrations/002_seed_data.sql) seeds 2 users with one bcrypt hash; [documents/upload](src/app/crm/api/documents/upload/route.ts) `writeFile`s to `process.cwd()`. |
 | 5. Content hardcoded | **Confirmed** | 11 modules in `src/data/`, zero DB reads from public pages. |
 | 6. (bonus) Data loss risk | **Confirmed** | `trips.page_url`, `trips.referrer`, `trips.utm_*` exist but the website never sends them (0 matches for `utm_` on the public side). |
+
+**Region note:** the project is in Southeast Asia (Singapore), not Mumbai. It
+cannot be moved — Supabase region is fixed at creation. Singapore is still far
+closer to India than US/EU, so it is acceptable; the Phase 4 recommendation
+should be "put the Vercel function region near the database", not "move the
+database".
 
 **Overall:** the marketing site is in good shape (Lighthouse SEO 1.00 on all four
 pages, CLS 0, no horizontal overflow at 360px). The CRM is effectively dead —
@@ -101,23 +130,38 @@ UI, not a rewrite.
 
 ## 2. Schema vs. what the UI uses
 
-### 2.1 The live database could not be inspected
+### 2.1 The live database could not be inspected — CORRECTED
 
 `scripts/schema-audit.mjs` (EXPLAIN-only, no writes) was the planned tool. It
-could not run:
+could not run at the time:
 
 ```
 DNS:  nbpnlbfxnmypqgabxikd.supabase.co -> ENOTFOUND
 PG :  (ENOTFOUND) tenant/user postgres.nbpnlbfxnmypqgabxikd not found
-HTTP:  fetch https://nbpnlbfxnmypqgabxikd.supabase.co/auth/v1/health -> failed
 ```
 
-Control test: `example.com`, `registry.npmjs.org` and `supabase.com` all
-returned `200` from the same shell, so this is not a sandbox network block.
-**The project ref is dead or wrong.** General outbound HTTPS works.
+**That was a local network outage, not a dead project.** Re-run with the
+Supabase CLI and the REST API, the project is reachable and the schema exists.
+`scripts/db-inventory.mjs` now reproduces the inventory.
 
-Because of that, the row-count inventory could not be produced. That is a
-**blocker for Phase 1** and is listed in §7 as a decision only you can make.
+Live row counts (read-only, 2026-10-04):
+
+| Table | Rows | | Table | Rows |
+|---|---|---|---|---|
+| activities | 122 | | itinerary_days | 0 |
+| audit_logs | 0 | | payments | 11 |
+| communications | 0 | | quotation_items | 26 |
+| company_settings | 1 | | quotations | 15 |
+| customers | 15 | | sessions | 20 |
+| documents | 0 | | suppliers | 5 |
+| drivers | 5 | | tasks | 10 |
+| followups | 11 | | trips | 13 |
+| hotels | 7 | | users | 2 |
+| | | | **total** | **263** |
+
+**Anon visibility check (Phase 1 gate):** the publishable key returns **0 rows**
+for `trips`, `customers`, `users`, `sessions` and `quotations`. RLS is
+effective for anon already.
 
 ### 2.2 Static diff (substitute evidence)
 

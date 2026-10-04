@@ -40,16 +40,34 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS legacy_user_id INTEGER;
 CREATE INDEX IF NOT EXISTS idx_profiles_legacy_user_id ON profiles(legacy_user_id);
 
 -- ---------- modern assignment columns (uuid) ----------
--- customers / trips / tasks / followups get an owner.
-ALTER TABLE customers ADD COLUMN IF NOT EXISTS assigned_to uuid REFERENCES profiles(id) ON DELETE SET NULL;
-ALTER TABLE trips     ADD COLUMN IF NOT EXISTS assigned_to uuid REFERENCES profiles(id) ON DELETE SET NULL;
-ALTER TABLE tasks     ADD COLUMN IF NOT EXISTS assigned_to uuid REFERENCES profiles(id) ON DELETE SET NULL;
-ALTER TABLE followups ADD COLUMN IF NOT EXISTS assigned_to uuid REFERENCES profiles(id) ON DELETE SET NULL;
+-- Named `assigned_profile_id`, NOT `assigned_to`, on purpose.
+--
+-- `tasks.assigned_to` and `followups.assigned_to` already exist in 001 as
+-- INTEGER REFERENCES users(id). `ADD COLUMN IF NOT EXISTS assigned_to uuid`
+-- is therefore a SILENT NO-OP: the column stays integer, and the RLS policy
+-- comparing it to auth.uid() dies with
+--     ERROR 42883: operator does not exist: integer = uuid
+-- `customers` and `trips` use the legacy name `assigned_employee_id`, so the
+-- bare name `assigned_to` was inconsistent across the four tables anyway.
+-- One unambiguous name for all four avoids the clash entirely.
+--
+-- The legacy integer columns are left untouched: the current CRM code still
+-- reads and writes them. Phase 2 retires them.
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS assigned_profile_id uuid REFERENCES profiles(id) ON DELETE SET NULL;
+ALTER TABLE trips     ADD COLUMN IF NOT EXISTS assigned_profile_id uuid REFERENCES profiles(id) ON DELETE SET NULL;
+ALTER TABLE tasks     ADD COLUMN IF NOT EXISTS assigned_profile_id uuid REFERENCES profiles(id) ON DELETE SET NULL;
+ALTER TABLE followups ADD COLUMN IF NOT EXISTS assigned_profile_id uuid REFERENCES profiles(id) ON DELETE SET NULL;
 
-CREATE INDEX IF NOT EXISTS idx_customers_assigned_to ON customers(assigned_to);
-CREATE INDEX IF NOT EXISTS idx_trips_assigned_to     ON trips(assigned_to);
-CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to     ON tasks(assigned_to);
-CREATE INDEX IF NOT EXISTS idx_followups_assigned_to ON followups(assigned_to);
+-- Clean up any half-applied state from an earlier run of this migration
+-- that created a uuid `assigned_to` on customers/trips before failing.
+-- These are never referenced by the policies below.
+ALTER TABLE customers DROP COLUMN IF EXISTS assigned_to;
+ALTER TABLE trips     DROP COLUMN IF EXISTS assigned_to;
+
+CREATE INDEX IF NOT EXISTS idx_customers_assigned_profile ON customers(assigned_profile_id);
+CREATE INDEX IF NOT EXISTS idx_trips_assigned_profile     ON trips(assigned_profile_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_assigned_profile     ON tasks(assigned_profile_id);
+CREATE INDEX IF NOT EXISTS idx_followups_assigned_profile ON followups(assigned_profile_id);
 
 -- Link a driver profile to the driver row, so "driver sees own trips" works.
 ALTER TABLE drivers ADD COLUMN IF NOT EXISTS profile_id uuid REFERENCES profiles(id) ON DELETE SET NULL;
@@ -182,7 +200,7 @@ CREATE POLICY "customers: assigned or unassigned" ON customers
   FOR SELECT TO authenticated
   USING (
     public.is_admin()
-    OR (public.is_crm() AND (assigned_to = auth.uid() OR assigned_to IS NULL))
+    OR (public.is_crm() AND (assigned_profile_id = auth.uid() OR assigned_profile_id IS NULL))
   );
 DROP POLICY IF EXISTS "customers: crm insert" ON customers;
 CREATE POLICY "customers: crm insert" ON customers
@@ -190,7 +208,7 @@ CREATE POLICY "customers: crm insert" ON customers
 DROP POLICY IF EXISTS "customers: assigned or admin update" ON customers;
 CREATE POLICY "customers: assigned or admin update" ON customers
   FOR UPDATE TO authenticated
-  USING (public.is_admin() OR (public.is_crm() AND (assigned_to = auth.uid() OR assigned_to IS NULL)))
+  USING (public.is_admin() OR (public.is_crm() AND (assigned_profile_id = auth.uid() OR assigned_profile_id IS NULL)))
   WITH CHECK (public.is_admin() OR public.is_crm());
 DROP POLICY IF EXISTS "customers: admin delete" ON customers;
 CREATE POLICY "customers: admin delete" ON customers
@@ -203,7 +221,7 @@ CREATE POLICY "trips: role scoped read" ON trips
   FOR SELECT TO authenticated
   USING (
     public.is_admin()
-    OR (public.is_crm() AND (assigned_to = auth.uid() OR assigned_to IS NULL))
+    OR (public.is_crm() AND (assigned_profile_id = auth.uid() OR assigned_profile_id IS NULL))
     OR (public.is_driver() AND EXISTS (
         SELECT 1 FROM drivers d WHERE d.assigned_trip_id = trips.id AND d.profile_id = auth.uid()
       ))
@@ -229,7 +247,7 @@ BEGIN
 
     EXECUTE format('DROP POLICY IF EXISTS "%s: assigned or unassigned" ON %I', t, t);
     EXECUTE format(
-      'CREATE POLICY "%s: assigned or unassigned" ON %I FOR SELECT TO authenticated USING (public.is_admin() OR (public.is_crm() AND (assigned_to = auth.uid() OR assigned_to IS NULL)))',
+      'CREATE POLICY "%s: assigned or unassigned" ON %I FOR SELECT TO authenticated USING (public.is_admin() OR (public.is_crm() AND (assigned_profile_id = auth.uid() OR assigned_profile_id IS NULL)))',
       t, t);
 
     EXECUTE format('DROP POLICY IF EXISTS "%s: crm insert" ON %I', t, t);
@@ -237,7 +255,7 @@ BEGIN
 
     EXECUTE format('DROP POLICY IF EXISTS "%s: crm update" ON %I', t, t);
     EXECUTE format(
-      'CREATE POLICY "%s: crm update" ON %I FOR UPDATE TO authenticated USING (public.is_admin() OR (public.is_crm() AND (assigned_to = auth.uid() OR assigned_to IS NULL))) WITH CHECK (public.is_admin() OR public.is_crm())',
+      'CREATE POLICY "%s: crm update" ON %I FOR UPDATE TO authenticated USING (public.is_admin() OR (public.is_crm() AND (assigned_profile_id = auth.uid() OR assigned_profile_id IS NULL))) WITH CHECK (public.is_admin() OR public.is_crm())',
       t, t);
 
     EXECUTE format('DROP POLICY IF EXISTS "%s: admin delete" ON %I', t, t);
@@ -256,7 +274,7 @@ CREATE POLICY "quotations: via parent trip" ON quotations
   FOR SELECT TO authenticated
   USING (public.is_admin() OR EXISTS (
     SELECT 1 FROM trips t WHERE t.id = quotations.trip_id
-      AND (public.is_crm() AND (t.assigned_to = auth.uid() OR t.assigned_to IS NULL))
+      AND (public.is_crm() AND (t.assigned_profile_id = auth.uid() OR t.assigned_profile_id IS NULL))
   ));
 DROP POLICY IF EXISTS "quotations: crm insert" ON quotations;
 CREATE POLICY "quotations: crm insert" ON quotations

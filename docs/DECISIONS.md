@@ -120,22 +120,92 @@ It becomes a server-only var.
 
 ---
 
-## D-007 · Phase 1 is blocked on the Supabase project
+## D-007 · Phase 1 is blocked on the Supabase project — **SUPERSEDED, see D-014**
 
 **Date:** 2026-10-04 · **Phase:** 0
 
-The configured project `nbpnlbfxnmypqgabxikd` does not resolve in DNS
-(`ENOTFOUND`) and the pooler reports `tenant not found`, while `example.com`,
-`supabase.com` and `registry.npmjs.org` all return 200 from the same shell.
+**This decision was based on a false premise and must not be followed.**
 
-**Conclusion:** the project is deleted, renamed, or the ref in `.env.local` is
-wrong. The CRM is non-functional today.
+It recorded that project `nbpnlbfxnmypqgabxikd` did not resolve in DNS and
+that the pooler reported `tenant not found`, and concluded the project was
+deleted. The DNS failures were caused by a **network outage on the auditing
+machine**. The project is alive. See D-014.
 
-**Decision:** do not guess and do not create a replacement project. Escalated to
-the owner as decision **D1** in `docs/AUDIT.md` §7, together with **D2** (where
-the real lead data lives). No migration may be written until this is answered,
-and before anything touches a live database the owner must take a backup and
-confirm it.
+---
+
+## D-014 · The Supabase project was never dead; the original database is reused
+
+**Date:** 2026-10-04 · **Phase:** 1
+
+**Corrects D-007.** Verified with the Supabase CLI after the audit's network
+outage ended:
+
+- `supabase projects list` shows the project: "safsr tour nextjs",
+  `nbpnlbfxnmypqgabxikd`, Southeast Asia (Singapore), created 2026-09-20.
+- The keys in `.env.local` are valid (`sb_publishable_…` / `sb_secret_…`).
+- It holds **263 rows**.
+- The publishable (anon) key returns **0 rows** on every CRM table, so the
+  Phase 1 security gate — "a non-logged-in user cannot access any CRM data" —
+  is **already satisfied** by the existing RLS-enabled-no-policies setup.
+
+**But the 263 rows are not real business data.** Customers 1–3 are the
+`002_seed_data.sql` demo rows; customers 4–15 are `E2E Renamed <timestamp>`
+rows from `scripts/e2e-crm.mjs`. The only 2 users are the seeded `admin123`
+accounts, and all 20 sessions are from test runs.
+
+**Decisions:**
+1. **Reuse this project.** Creating a fresh Mumbai project is unnecessary: it
+   would mean new keys, new Vercel env vars, and re-importing data that turns
+   out to be test noise.
+2. **Real lead history comes only from the Google Sheet**, via
+   `scripts/import-sheets-leads.mjs`. There is no CRM history to preserve.
+3. **Region cannot be changed** — Supabase fixes it at creation. Singapore is
+   much closer to India than US/EU, so it is accepted. Phase 4's advice changes
+   from "move the database to Mumbai" to "place the Vercel functions near the
+   database".
+
+**Lesson recorded:** a DNS failure is not evidence that a resource is gone.
+Confirm with the provider's own API (here `supabase projects list`) before
+concluding data loss.
+
+---
+
+## D-015 · The uuid assignment column is `assigned_profile_id`, not `assigned_to`
+
+**Date:** 2026-10-04 · **Phase:** 1
+
+Migration 005 initially did:
+
+```sql
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS assigned_to uuid …
+```
+
+and its policy compared `assigned_to = auth.uid()`. Applying it failed:
+
+```
+ERROR 42883: operator does not exist: integer = uuid
+```
+
+**Cause:** `tasks.assigned_to` and `followups.assigned_to` already exist in
+migration 001 as `INTEGER REFERENCES users(id)`. `ADD COLUMN IF NOT EXISTS` is a
+**silent no-op** when the name already exists — the column stays `integer`, and
+the policy then compares integer to uuid. `customers` and `trips` use the
+legacy name `assigned_employee_id` instead, so the bare name `assigned_to` was
+inconsistent across the four tables anyway.
+
+**Fix:** all four tables get `assigned_profile_id uuid REFERENCES profiles(id)`.
+The legacy integer columns are untouched (the current CRM code still reads and
+writes them; Phase 2 retires them). Migration 005 also drops the stray
+`assigned_to` columns a partial run may have created on `customers`/`trips`.
+
+**Consequence for tooling:** `scripts/phase1-sql-check.mjs` now parses
+`CREATE TABLE` bodies from migrations 001–004 and **fails on any
+`ADD COLUMN IF NOT EXISTS` whose name already exists with a different type**.
+That is a whole bug class — an `ADD COLUMN IF NOT EXISTS` can no longer fail
+silently and surface later as a confusing type error.
+
+**Rule adopted:** for a type-critical column, never rely on
+`ADD COLUMN IF NOT EXISTS` to establish its type.
 
 ---
 
