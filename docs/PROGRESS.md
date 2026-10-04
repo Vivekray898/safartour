@@ -9,12 +9,11 @@ new session** and resume from the recorded state. Do not redo completed phases.
 
 | | |
 |---|---|
-| **Current phase** | Phase 0 — audit |
-| **Phase 0 status** | ✅ **Complete, verified, pushed** |
-| **Branch** | `phase-0-audit` |
-| **Base** | `main` @ `4eea3d3` |
-| **Awaiting** | Owner approval to merge to `main` and/or start Phase 1 |
-| **Blocker for Phase 1** | Supabase project `nbpnlbfxnmypqgabxikd` does not resolve — see Phase 0 §7 D1/D2 |
+| **Current phase** | Phase 1 — foundation |
+| **Phase 0 status** | ✅ Complete — merged to `main` @ `7a82771` |
+| **Phase 1 status** | 🟡 In progress on `phase-1-foundation`, not merged |
+| **Awaiting** | You create the Supabase project (see `docs/OWNER-GUIDE.md`) |
+| **Blocker** | Supabase project `nbpnlbfxnmypqgabxikd` does not resolve; a fresh project is being created |
 
 ---
 
@@ -105,11 +104,83 @@ lead to the live Google Sheet, D9 AI-crawler policy.
 
 ## Phase 1 — Foundation
 
-**Status:** ⏸️ Not started — blocked on D1/D2.
+**Status:** 🟡 In progress · **Branch:** `phase-1-foundation` · **Merged to main:** no
+· **Blocked on:** you creating the Supabase project (see `docs/OWNER-GUIDE.md`)
 
-Plan of record: Supabase Auth, real RLS, `proxy.ts` protection, Supabase Storage,
-`profiles` table, zod on all inputs, one-time first-admin script, CSV import of
-existing Sheets leads. Estimated 4–6 days once unblocked.
+Owner decisions taken: **create a fresh project in Mumbai (ap-south-1)**, and
+**recover lead history from a Google Sheets CSV export** (the old Supabase
+project is unrecoverable, so no CRM trips/customers survive).
+
+### What is done and verified
+
+| Deliverable | Status |
+|---|---|
+| `supabase/migrations/005_auth_profiles_rls.sql` | ✅ written — `profiles`, role helpers, uuid assignment columns, real RLS on all 18 tables, `pg_trgm` search indexes |
+| `supabase/migrations/006_storage_and_seed_cleanup.sql` | ✅ written — private `crm-documents` bucket + policies, deletes the `admin123` demo users |
+| `src/lib/supabase/{client,server,proxy}.ts` | ✅ typecheck clean |
+| `src/proxy.ts` | ✅ **registered** — verified by the `ƒ Proxy (Middleware)` line in the build |
+| Security headers + CSP | ✅ verified served on a real request |
+| `.env.example` | ✅ new publishable/secret key names |
+| `scripts/create-first-admin.mjs` | ✅ written |
+| `scripts/import-sheets-leads.mjs` | ✅ parsing + dedup verified against a sample CSV (13/13 phone cases) |
+| `docs/OWNER-GUIDE.md` | ✅ plain-language setup steps |
+
+**Deliberately NOT done** (see `docs/DECISIONS.md` D-010): the legacy
+`users`/`sessions` auth and `src/lib/crm/db.ts` are still in place, and no CRM
+handler is rewritten to `supabase-js`. That refactor is unverifiable until a
+live database exists, and it is Phase 2 work.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `pnpm lint` | ✅ exit 0 — 0 errors, 86 warnings (none in new files) |
+| `npx tsc --noEmit` | ✅ exit 0 |
+| `pnpm build` | ✅ exit 0, `ƒ Proxy (Middleware)` present |
+| Security headers served | ✅ curl against the production build |
+| Public site unaffected by the proxy | ✅ `/`, `/packages`, `/contact` all 200 in <70 ms |
+| `/api/leads` unaffected | ✅ 422 on invalid input, as before |
+| Phone normalisation | ✅ 13/13 cases |
+| CSV dry-run | ✅ 6 rows → 4 usable, 2 skipped, 1 repeat enquiry detected |
+
+### Two real bugs caught by verification
+
+1. **`src/proxy.ts` vs root `proxy.ts`.** At the repo root the proxy built and
+   linted cleanly but was **never registered** — no `ƒ Proxy` line, and session
+   refresh would silently never run. Fixed by moving it to `src/proxy.ts`.
+2. **`normalisePhone()` mangled leading zeros**, turning `09876543211` into the
+   invalid `+09876543211` and breaking deduplication. Fixed to strip all
+   leading zeros; 13/13 cases pass.
+
+### Blocked on you
+
+Follow `docs/OWNER-GUIDE.md`:
+
+- [ ] **Create the Supabase project** (Mumbai region) and paste back the
+      Project URL, publishable key and secret key.
+- [ ] Turn **off public sign-ups** in Authentication → Sign In / Providers.
+- [ ] Enable **asymmetric signing keys** in JWT Settings.
+- [ ] Set the three environment variables in **Vercel** and redeploy.
+- [ ] Export the Google Sheet to CSV and tell me where it is.
+- [ ] **Before I apply migrations 001–006 to the new project:** take a backup
+      (or confirm the new empty project needs none) and tell me to go ahead.
+
+### Not verified — needs a live project
+
+- Migration SQL has never been executed. It is written carefully and is
+  idempotent, but it is **untested**. Applying it is the next step and it
+  requires your go-ahead.
+- The RLS role behaviour ("admin sees everything, staff sees assigned or
+  unassigned, drivers see only their own trips") is **untested**. Phase 1 is
+  not complete until it is verified against the live project.
+
+### Note on `package.json`
+
+This phase's commits include `package.json` and `pnpm-lock.yaml`. They carry
+the `@supabase/*` additions **and** the redesign dependencies from earlier
+sessions (`framer-motion`, `@radix-ui/*`, `clsx`, `cva`, `tailwind-merge`),
+which were uncommitted in the working tree. Committing the manifest is required
+for the branch to build. The redesign components themselves remain uncommitted.
 
 ---
 

@@ -169,3 +169,79 @@ goes to `/tmp/lh-safartour/`), and are safe to re-run at any time.
 before/after numbers are real, and the schema diff is what substitutes for the
 EXPLAIN audit until D-007 is resolved. Neither adds a dependency — Lighthouse is
 invoked through `npx` on demand, not installed.
+
+---
+
+## D-010 · Legacy `users`/`sessions` auth is NOT removed in Phase 1
+
+**Date:** 2026-10-04 · **Phase:** 1
+
+Migration 005 adds `profiles`, uuid assignment columns and real RLS policies,
+but the old integer-keyed `users` / `sessions` tables and the
+`src/lib/crm/auth.ts` cookie session are **left in place**, and no CRM handler
+is rewritten to use `supabase-js`.
+
+**Why:** rewriting 45 handlers and 15 pages away from `DATABASE_URL` is only
+meaningful once a live database exists to test against. Doing it blind would
+mean pushing roughly 3,000 lines that could not be executed even once, which
+is exactly what "never push a failing phase" forbids.
+
+**Consequence:** after Phase 1 the app has two auth paths — the legacy one the
+CRM still uses, and the Supabase one the proxy and new clients use. Phase 2
+deletes the legacy path. Until then the CRM is no more reachable than it was in
+Phase 0, because there is still no database.
+
+---
+
+## D-011 · `src/proxy.ts`, not `proxy.ts` at the repository root
+
+**Date:** 2026-10-04 · **Phase:** 1
+
+Next.js 16 renamed `middleware.ts` to `proxy.ts`. The file must sit "at the
+same level as `pages` or `app`" — and this project keeps `app` under `src/`,
+so the proxy belongs at **`src/proxy.ts`**.
+
+**Why it matters:** a root-level `proxy.ts` built successfully, passed
+typecheck and lint, and was **silently ignored** — no `ƒ Proxy` line appeared in
+the build output. Session refresh would simply never have run and nobody would
+have known until users were mysteriously signed out. Caught by grepping the
+build log for `ƒ Proxy (Middleware)` rather than trusting a green build.
+
+**How it is verified now:** every Phase 1+ build checks for the `ƒ Proxy`
+line. If it is missing, the phase fails.
+
+---
+
+## D-012 · Phone numbers are normalised by stripping all leading zeros
+
+**Date:** 2026-10-04 · **Phase:** 1
+
+`normalisePhone()` in `scripts/import-sheets-leads.mjs` strips *any* number of
+leading zeros before adding the country code.
+
+**Why:** an E.164 country code never begins with 0, so a leading 0 is always a
+national trunk prefix. Indian mobiles typed with one (`09876543211`) and STD
+landlines (`0354 123456`) both appear in real lead data. Without stripping, the
+first became `+09876543211` — invalid, and it would not match `9876543211`, so
+deduplication would silently fail and the same person would be created twice.
+
+Phase 2 must use this exact function in `/api/leads`, not a second
+implementation.
+
+---
+
+## D-013 · CSP allows `unsafe-inline` and `unsafe-eval` for scripts
+
+**Date:** 2026-10-04 · **Phase:** 1
+
+The Content-Security-Policy in `next.config.ts` ships with `'unsafe-inline'`
+and `'unsafe-eval'` in `script-src`.
+
+**Why:** Next.js App Router injects inline bootstrap scripts, and React needs
+`eval`-style evaluation in development. A strict nonce-based policy needs
+`proxy.ts` to generate a per-request nonce and thread it through, which is
+meaningful work with no benefit until the site is otherwise finished.
+
+**Revisit in Phase 4**, when a nonce-based policy can be added and measured. The
+other five headers (`X-Content-Type-Options`, `X-Frame-Options`,
+`Referrer-Policy`, `Permissions-Policy`, `frame-ancestors`) are strict now.
