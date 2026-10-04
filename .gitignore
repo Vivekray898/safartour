@@ -35,6 +35,10 @@ yarn-error.log*
 # ...but the template must be committed, it holds no secrets.
 !.env.example
 
+# Supabase CLI local state (project-ref, pooler-url, linked-project.json).
+# Machine-specific and can leak which project is linked.
+supabase/.temp/
+
 # vercel
 .vercel
 
