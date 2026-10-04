@@ -58,11 +58,10 @@ ALTER TABLE trips     ADD COLUMN IF NOT EXISTS assigned_profile_id uuid REFERENC
 ALTER TABLE tasks     ADD COLUMN IF NOT EXISTS assigned_profile_id uuid REFERENCES profiles(id) ON DELETE SET NULL;
 ALTER TABLE followups ADD COLUMN IF NOT EXISTS assigned_profile_id uuid REFERENCES profiles(id) ON DELETE SET NULL;
 
--- Clean up any half-applied state from an earlier run of this migration
--- that created a uuid `assigned_to` on customers/trips before failing.
--- These are never referenced by the policies below.
-ALTER TABLE customers DROP COLUMN IF EXISTS assigned_to;
-ALTER TABLE trips     DROP COLUMN IF EXISTS assigned_to;
+-- NOTE: the stray `assigned_to` columns from a partial earlier run are dropped
+-- at the END of this file, not here. Policies created by that earlier run still
+-- reference the column, so dropping it before those policies are replaced would
+-- fail with a dependency error.
 
 CREATE INDEX IF NOT EXISTS idx_customers_assigned_profile ON customers(assigned_profile_id);
 CREATE INDEX IF NOT EXISTS idx_trips_assigned_profile     ON trips(assigned_profile_id);
@@ -361,6 +360,18 @@ CREATE POLICY "drivers: crm read" ON drivers
 DROP POLICY IF EXISTS "drivers: admin write" ON drivers;
 CREATE POLICY "drivers: admin write" ON drivers
   FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+-- ---------- clean up the partial earlier run ----------
+-- An earlier attempt at this migration added a uuid `assigned_to` to customers
+-- and trips and created policies referencing it, then failed. Every policy
+-- above has now been dropped and recreated against `assigned_profile_id`, so
+-- nothing depends on the old column and it can safely go.
+--
+-- IF EXISTS keeps this a no-op on a clean database. On a fresh database there
+-- is no `assigned_to` column on these two tables at all (they use
+-- assigned_employee_id), so both statements are silent no-ops.
+ALTER TABLE customers DROP COLUMN IF EXISTS assigned_to;
+ALTER TABLE trips     DROP COLUMN IF EXISTS assigned_to;
 
 -- ---------- search performance ----------
 -- pg_trgm powers ILIKE '%q%' search on the two tables staff search most.
