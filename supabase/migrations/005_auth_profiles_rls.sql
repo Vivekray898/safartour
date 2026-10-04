@@ -174,6 +174,11 @@ BEGIN
     'suppliers', 'hotels', 'company_settings',
     'users', 'sessions', 'audit_logs'
   ] LOOP
+    -- NOTE on company_settings: migration 004 already created a permissive
+    -- policy named "server only" with USING (false). Postgres ORs permissive
+    -- policies of the same command, so `false OR is_crm()` = `is_crm()`.
+    -- The new policies therefore do NOT need to drop "server only", and
+    -- dropping it would be wrong. Leave it alone.
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
 
     EXECUTE format('DROP POLICY IF EXISTS "%s: crm read" ON %I', t, t);

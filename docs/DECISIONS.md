@@ -207,6 +207,37 @@ silently and surface later as a confusing type error.
 **Rule adopted:** for a type-critical column, never rely on
 `ADD COLUMN IF NOT EXISTS` to establish its type.
 
+**Second instance, same error, different policy.** After the first fix, applying
+005 failed again with the identical `42883: operator does not exist: integer =
+uuid`. The cause was the drivers read policy:
+
+```sql
+USING (public.is_crm() OR id = auth.uid() OR profile_id = auth.uid())
+```
+
+`drivers.id` is `SERIAL`. The first fix had only audited the columns 005 *added*,
+not the columns already on the table — so a second instance slipped through in
+a policy I had not re-read. A driver now matches their own row through
+`profile_id`, the uuid FK to `profiles`.
+
+**Tooling consequence:** `scripts/phase1-sql-check.mjs` now resolves *every*
+column compared with `auth.uid()` against the declared schema — including tables
+the migration creates itself, such as `profiles` — and fails when the type is not
+`uuid`. Its first implementation missed the `drivers.id` case because it tested
+`cols.has('drivers.')`, a key that never exists, so it reported "no clashes" on
+a broken file. Negative controls that re-inject each of the two bugs now prove
+it catches both.
+
+**Rule adopted (2):** before comparing a column to `auth.uid()`, confirm its
+declared type. Every `integer = uuid` comparison is a latent failure — the
+column may be SERIAL, or an integer legacy FK that `ADD COLUMN IF NOT EXISTS`
+silently skipped.
+
+**Note on re-running.** Both failed attempts were partial, but every statement in
+005 is `IF [NOT] EXISTS`, `DROP ... IF EXISTS` or `CREATE OR REPLACE`, so a third
+attempt is safe. The stray `assigned_to` columns from attempt 1 are dropped at
+the end of 005, after the policies that referenced them are replaced.
+
 ---
 
 ## D-008 · AI crawlers: allow (default), subject to owner confirmation
