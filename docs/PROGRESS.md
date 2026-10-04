@@ -26,8 +26,7 @@ new session** and resume from the recorded state. Do not redo completed phases.
 
 | SHA | Subject |
 |---|---|
-| _(see `git log phase-0-audit`)_ | Phase 0: audit of CRM, lead flow, schema, security, SEO and performance |
-| _(this file's commit)_ | Phase 0: add progress log |
+| `40efcc3` | Phase 0: audit of CRM, lead flow, schema, security, SEO and performance |
 
 ### Deliverables
 
