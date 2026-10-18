@@ -21,7 +21,7 @@ The single most important finding is not in the plan:
 | 1. Website and CRM disconnected | **Confirmed** | [route.ts](src/app/api/leads/route.ts) imports only zod + config; no Supabase client, no `getDb`. |
 | 2. CRM is hand-rolled | **Confirmed** | [db.ts](src/lib/crm/db.ts) is a `postgres` + SQLite-dialect shim; [auth.ts](src/lib/crm/auth.ts) uses a `crm_session` cookie and a `sessions` table. |
 | 3. CRM modules unlinked | **Partly wrong** | All 14 nav links resolve. But: no back-links/breadcrumbs on any detail page, and the Documents feature has no UI at all. |
-| 4. `admin123` seed + disk storage | **Confirmed** | [002_seed_data.sql](supabase/migrations/002_seed_data.sql) seeds 2 users with one bcrypt hash; [documents/upload](src/app/crm/api/documents/upload/route.ts) `writeFile`s to `process.cwd()`. |
+| 4. Committed demo credentials + disk storage | **Confirmed** | [002_seed_data.sql](supabase/migrations/002_seed_data.sql) seeds two users with the same committed bcrypt hash; [documents/upload](src/app/crm/api/documents/upload/route.ts) `writeFile`s to `process.cwd()`. |
 | 5. Content hardcoded | **Confirmed** | 11 modules in `src/data/`, zero DB reads from public pages. |
 | 6. (bonus) Data loss risk | **Confirmed** | `trips.page_url`, `trips.referrer`, `trips.utm_*` exist but the website never sends them (0 matches for `utm_` on the public side). |
 
@@ -292,7 +292,7 @@ Measured on `/contact` at a 360 px viewport:
 
 | # | Finding | Location |
 |---|---|---|
-| S1 | **Seeded credentials in a committed migration.** Two users, password `admin123`, bcrypt hash `$2b$10$Xc7KV6v7...` in version control. The README publishes the password. | [002_seed_data.sql](supabase/migrations/002_seed_data.sql), [supabase/README.md](supabase/README.md) |
+| S1 | **Seeded credentials in a committed migration.** Two users share a known committed bcrypt hash in version control, and the README publishes the corresponding password. | [002_seed_data.sql](supabase/migrations/002_seed_data.sql), [supabase/README.md](supabase/README.md) |
 | S2 | **No rate limiting on login.** Unlimited password attempts against a known email address. | [auth/login/route.ts](src/app/crm/api/auth/login/route.ts) |
 | S3 | **No `middleware.ts` / `proxy.ts` exists.** Protection is per-page `requireAuth()`. Any new route added under `/crm` without that call is public by default. | repo-wide |
 | S4 | **Document uploads to the local filesystem.** `join(process.cwd(), 'crm-documents')` + `writeFile`. Vercel's filesystem is read-only except `/tmp`, so uploads fail in production; locally, files land outside `public/` with no serving route. | [documents/upload](src/app/crm/api/documents/upload/route.ts), [documents/[id]](src/app/crm/api/documents/[id]/route.ts) |

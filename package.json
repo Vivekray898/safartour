@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node scripts/test.mjs",
+    "crm:user": "node --env-file=.env.local scripts/create-crm-user.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

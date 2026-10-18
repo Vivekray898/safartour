@@ -5,14 +5,19 @@
  *   pnpm build && pnpm start            # in one terminal
  *   node --env-file=.env.local scripts/e2e-crm.mjs
  *
- * Requires CRM_EMAIL / CRM_PASS (defaults: enquiry@safartour.in / admin123).
+ * Requires CRM_EMAIL / CRM_PASS.
  * Leaves one archived test trip + customer behind (soft delete, no data destroyed).
  */
 import postgres from 'postgres';
 
 const BASE = process.env.BASE_URL || 'http://localhost:50760';
-const EMAIL = process.env.CRM_EMAIL || 'enquiry@safartour.in';
-const PASS = process.env.CRM_PASS || 'admin123';
+const EMAIL = process.env.CRM_EMAIL;
+const PASS = process.env.CRM_PASS;
+
+if (!EMAIL || !PASS) {
+  console.error('Set CRM_EMAIL and CRM_PASS before running the CRM smoke test.');
+  process.exit(2);
+}
 const STAMP = Date.now();
 
 const sql = postgres(process.env.DATABASE_URL, { prepare: false, max: 1 });

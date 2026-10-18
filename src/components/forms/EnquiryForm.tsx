@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   CheckCircle2,
   Loader2,
@@ -62,6 +62,10 @@ export default function EnquiryForm({
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [website, setWebsite] = useState(""); // honeypot
+  // Keep the initial render deterministic for SSR/hydration. Generate the
+  // id only when a real submission starts, then reuse it for retries so the
+  // CRM idempotency key remains stable.
+  const submissionIdRef = useRef<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<
     "idle" | "submitting" | "success" | "error"
@@ -80,7 +84,11 @@ export default function EnquiryForm({
     if (status === "submitting") return; // double-submit guard
     setErrors({});
 
+    const submissionId =
+      submissionIdRef.current ?? (submissionIdRef.current = crypto.randomUUID());
+
     const payload = {
+      submissionId,
       formType,
       page: typeof window !== "undefined" ? window.location.pathname : "",
       name,
@@ -133,6 +141,7 @@ export default function EnquiryForm({
 
   function getWhatsAppHref() {
     return leadWhatsAppHref({
+      submissionId: "",
       formType,
       page: "",
       name,

@@ -11,6 +11,7 @@ export default function QuickLeadPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [tripId, setTripId] = useState<number | null>(null);
   const [tripRef, setTripRef] = useState('');
 
   const [formData, setFormData] = useState({
@@ -77,7 +78,9 @@ export default function QuickLeadPage() {
 
         const data = await res.json();
 
-        if (data.ok) {
+        const createdTripId = Number(data.trip?.id);
+        if (data.ok && Number.isInteger(createdTripId) && createdTripId > 0 && data.trip?.reference) {
+          setTripId(createdTripId);
           setTripRef(data.trip.reference);
           setSuccess(true);
         } else {
@@ -105,7 +108,7 @@ export default function QuickLeadPage() {
         </div>
         <div className="flex gap-3 justify-center">
           <button
-            onClick={() => router.push(`/crm/leads/${tripRef}`)}
+            onClick={() => router.push(`/crm/leads/${tripId}`)}
             className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
             View Lead

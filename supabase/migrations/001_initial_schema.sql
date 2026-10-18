@@ -2,7 +2,8 @@
 -- Safar Tours CRM — Supabase PostgreSQL schema
 -- ============================================================
 -- Run this once in the Supabase SQL Editor (or `psql $DATABASE_URL`),
--- then run supabase/seed.sql for the default users + demo data.
+-- then run supabase/migrations/002_seed_data.sql for demo data and disabled
+-- placeholder users.
 --
 -- Notes
 --  - Date/time and boolean-ish columns are TEXT / INTEGER(0|1) on purpose:

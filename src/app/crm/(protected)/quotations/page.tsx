@@ -79,7 +79,7 @@ export default async function QuotationsPage({
             href="/crm/leads/new"
             className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
-            New Quotation
+            Create a Lead
           </Link>
         </div>
 

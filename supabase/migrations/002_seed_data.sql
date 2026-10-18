@@ -1,21 +1,20 @@
 -- ============================================================
 -- Safar Tours CRM — Supabase PostgreSQL seed data
 -- ============================================================
--- Run AFTER supabase/schema.sql. Mirrors the demo dataset the previous
--- SQLite engine auto-created: two users (password: admin123), three
+-- Run AFTER supabase/migrations/001_initial_schema.sql. Mirrors the demo dataset the previous
+-- SQLite engine auto-created: two disabled placeholder users, three
 -- customers, five trips, quotations, payments, follow-ups, tasks,
 -- activities, hotels, suppliers and drivers.
 --
--- Default logins (change these after first login):
---   admin@safartour.crm / admin123   (admin)
---   rajesh@safartour.crm / admin123  (employee)
+-- User passwords are intentionally disabled in seed data. Provision a real
+-- account with `CRM_BOOTSTRAP_PASSWORD=... pnpm crm:user -- ...` after setup.
 
 -- ---------- users ----------
 INSERT INTO users (id, name, email, phone, password_hash, role, is_active) VALUES
   (1, 'Admin User', 'enquiry@safartour.in', '+919876543210',
-   '$2b$10$Xc7KV6v7wJcI9j1hjmj31uE4ho.ykzZj5w.XCoV1.orwedAIONuT6', 'admin', 1),
+   '!disabled!', 'admin', 0),
   (2, 'Rajesh Kumar', 'rajesh@safartour.crm', '+919876543211',
-   '$2b$10$Xc7KV6v7wJcI9j1hjmj31uE4ho.ykzZj5w.XCoV1.orwedAIONuT6', 'employee', 1)
+   '!disabled!', 'employee', 0)
 ON CONFLICT (id) DO NOTHING;
 
 -- ---------- customers ----------

@@ -17,7 +17,7 @@
  * PostgreSQL database (Project Settings → Database → Connection string → URI).
  * It is server-only: it is never prefixed with NEXT_PUBLIC_, so it is never
  * shipped to the browser. Row Level Security is enabled on every table in
- * supabase/schema.sql so the database can only be reached through this server
+ * supabase/migrations/001_initial_schema.sql so the database can only be reached through this server
  * code, which enforces the CRM's own session/role permissions.
  */
 import postgres from 'postgres';
@@ -43,14 +43,15 @@ function getSql(): postgres.Sql {
   if (_sql) return _sql;
 
   const connectionString =
-    process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
+    process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
 
   if (!connectionString) {
     throw new Error(
-      '[CRM DB] DATABASE_URL is not configured. Set DATABASE_URL in .env.local to your ' +
+        '[CRM DB] SUPABASE_DB_URL or DATABASE_URL is not configured. Set a Supabase ' +
+        'session-pooler URI in .env.local to your ' +
         'Supabase PostgreSQL connection string (Supabase Dashboard → Project Settings → ' +
-        'Database → Connection string → URI), then create the tables by running ' +
-        'supabase/schema.sql and supabase/seed.sql in the Supabase SQL Editor. ' +
+        'Database → Connection string → URI), then create the tables by running the ' +
+        'ordered files in supabase/migrations/ in the Supabase SQL Editor. ' +
         'See supabase/README.md for the full setup.'
     );
   }

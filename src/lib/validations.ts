@@ -9,6 +9,8 @@ import { isFormType } from "@/config/forms";
  * stored (Google Sheet tab / email subject), not which rules apply.
  */
 export const leadSchema = z.object({
+  /** Stable client-generated key so retries cannot create duplicate CRM leads. */
+  submissionId: z.string().uuid().optional().default(""),
   /** Which form the lead came from — decides the Google Sheet tab. */
   formType: z
     .string()
@@ -36,7 +38,11 @@ export const leadSchema = z.object({
     ])
     .optional()
     .transform((v) => v ?? ""),
-  destination: z.string().trim().min(1, "Please select your destination."),
+  destination: z
+    .string()
+    .trim()
+    .min(1, "Please select your destination.")
+    .max(200, "Destination is too long."),
   /** Approximate travel start date (optional, free text or ISO date). */
   travelDate: z.union([z.literal(""), z.string().trim().max(60)]).optional().default(""),
   travellers: z
@@ -59,6 +65,11 @@ export const leadSchema = z.object({
 });
 
 export type LeadInput = z.infer<typeof leadSchema>;
+
+export const crmLoginSchema = z.object({
+  email: z.string().trim().email("Please enter a valid email address.").max(254),
+  password: z.string().min(1, "Password is required.").max(200),
+});
 
 /** Formats a zod error into a field -> message map for form display. */
 export function fieldErrors(error: z.ZodError): Record<string, string> {

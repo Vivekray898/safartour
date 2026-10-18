@@ -116,7 +116,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="admin@safartour.crm"
+                 placeholder="name@company.com"
                 required
               />
             </div>
@@ -152,13 +152,9 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-xs font-medium text-gray-500 mb-2">Demo credentials:</p>
-            <div className="text-xs text-gray-600 space-y-1">
-              <p><strong>Admin:</strong> admin@safartour.crm / admin123</p>
-              <p><strong>Employee:</strong> rajesh@safartour.crm / admin123</p>
-            </div>
-          </div>
+          <p className="mt-6 text-center text-xs text-gray-500">
+            Need access? Ask an administrator to provision your CRM account.
+          </p>
         </div>
       </div>
     </div>

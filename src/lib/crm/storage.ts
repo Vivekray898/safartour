@@ -7,7 +7,7 @@
  */
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SERVICE_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export const LOGO_BUCKET = 'crm-logos';
 export const MAX_LOGO_BYTES = 2 * 1024 * 1024; // 2 MB
@@ -44,7 +44,7 @@ function publicUrlFor(path: string): string {
  */
 export async function uploadLogo(file: File): Promise<string> {
   if (!SUPABASE_URL || !SERVICE_KEY) {
-    throw new Error('Supabase Storage is not configured (missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)');
+    throw new Error('Supabase Storage is not configured (missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SECRET_KEY)');
   }
   if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
     throw new Error('Logo must be a PNG, JPG or WebP image');

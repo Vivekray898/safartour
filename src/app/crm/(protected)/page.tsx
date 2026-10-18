@@ -73,7 +73,7 @@ export default async function DashboardPage() {
   `).all() as Array<{ status: string; count: number; customer_name: string | null; reference: string; destination: string | null; start_date: string | null }>;
 
   const overdueFollowups = await db.prepare(`
-    SELECT f.id, f.scheduled_date, f.scheduled_time, f.followup_type, f.note,
+    SELECT f.id, f.trip_id, f.scheduled_date, f.scheduled_time, f.followup_type, f.note,
       t.reference as trip_reference, c.name as customer_name, t.destination
     FROM followups f
     JOIN trips t ON f.trip_id = t.id
@@ -85,6 +85,7 @@ export default async function DashboardPage() {
     LIMIT 5
   `).all(today) as Array<{
     id: number;
+    trip_id: number;
     scheduled_date: string;
     scheduled_time: string | null;
     followup_type: string;
@@ -95,7 +96,7 @@ export default async function DashboardPage() {
   }>;
 
   const todayFollowups = await db.prepare(`
-    SELECT f.id, f.scheduled_time, f.followup_type, f.note,
+    SELECT f.id, f.trip_id, f.scheduled_time, f.followup_type, f.note,
       t.reference as trip_reference, c.name as customer_name, t.destination, t.status
     FROM followups f
     JOIN trips t ON f.trip_id = t.id
@@ -106,6 +107,7 @@ export default async function DashboardPage() {
     ORDER BY f.scheduled_time ASC
   `).all(today) as Array<{
     id: number;
+    trip_id: number;
     scheduled_time: string | null;
     followup_type: string;
     note: string | null;

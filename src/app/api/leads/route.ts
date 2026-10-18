@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { leadSchema, fieldErrors } from "@/lib/validations";
 import { isFormType, SHEET_TABS, FORM_TYPE_LABELS, type FormType } from "@/config/forms";
+import { createPublicLead } from "@/lib/crm/public-leads";
 
 // Naive in-memory rate limiter: 5 leads per IP per 10 minutes.
 const RATE_LIMIT_MAX = 5;
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
 
   const formType: FormType = isFormType(data.formType) ? data.formType : "tour";
   const lead = {
+    submissionId: data.submissionId || crypto.randomUUID(),
     formType,
     name: sanitize(data.name),
     phone: sanitize(data.phone),
@@ -75,7 +77,32 @@ export async function POST(request: Request) {
 
   const endpoint = process.env.NEXT_PUBLIC_GOOGLE_SHEETS_ENDPOINT ?? "";
 
-  // 1. Primary: forward to the Google Apps Script web app (one spreadsheet,
+  // 1. Primary: persist to the CRM before fan-out notifications. The RPC is
+  // idempotent and performs customer/trip/activity writes atomically.
+  const crmLead = await createPublicLead({ ...data, ...lead });
+  if (crmLead) {
+    // Sheets remains a best-effort mirror during the migration window. A
+    // mirror failure must not turn a durable CRM success into a client error.
+    if (endpoint) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10_000);
+        await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(lead),
+          signal: controller.signal,
+          redirect: "follow",
+        });
+        clearTimeout(timeout);
+      } catch (err) {
+        console.error("Sheets mirror failed after CRM save:", err instanceof Error ? err.name : "unknown");
+      }
+    }
+    return NextResponse.json({ ok: true, stored: "crm", tripReference: crmLead.trip_reference });
+  }
+
+  // 2. Fallback: forward to the Google Apps Script web app (one spreadsheet,
   //    one tab per form type). The script is server-to-server from here, so
   //    no CORS concerns.
   if (endpoint) {
@@ -105,7 +132,7 @@ export async function POST(request: Request) {
     }
   }
 
-  // 2. Secondary: server-side email via Resend (optional; best-effort).
+  // 3. Secondary: server-side email via Resend (optional; best-effort).
   const resendKey = process.env.RESEND_API_KEY;
   const toEmail = process.env.ENQUIRY_TO_EMAIL;
   let emailed = false;
@@ -150,7 +177,7 @@ export async function POST(request: Request) {
     }
   }
 
-  // 3. Last resort: structured server log (visible in hosting logs).
+  // 4. Last resort: structured server log (visible in hosting logs).
   console.log(
     `[LEAD FALLBACK] ${JSON.stringify({ ...lead, emailed })}`
   );

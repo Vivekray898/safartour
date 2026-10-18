@@ -9,14 +9,47 @@ new session** and resume from the recorded state. Do not redo completed phases.
 
 | | |
 |---|---|
-| **Current phase** | Phase 0 — audit |
-| **Phase 0 status** | ✅ **Complete, verified, pushed** |
-| **Branch** | `phase-0-audit` |
-| **Base** | `main` @ `4eea3d3` |
-| **Awaiting** | Owner approval to merge to `main` and/or start Phase 1 |
-| **Blocker for Phase 1** | Supabase project `nbpnlbfxnmypqgabxikd` does not resolve — see Phase 0 §7 D1/D2 |
+| **Current phase** | Phase 1 — foundation, partial |
+| **Phase 0 status** | ✅ Complete; historical audit preserved below |
+| **Branch** | `main` |
+| **Base** | `main` @ `7a82771` |
+| **Awaiting** | Owner-approved valid lead test and provider backup/restore confirmation |
+| **Database status** | Linked Supabase CLI access works; the app's direct `DATABASE_URL` still fails DNS |
 
 ---
+
+## 2026-10-18 execution update
+
+The linked Supabase project is reachable through the Supabase CLI Management API.
+Read-only inspection found PostgreSQL 17.6, 19 public CRM tables plus the Auth/RLS
+foundation, 2 legacy users, 13 trips, 15 customers, 0 Auth users/profiles, and no
+Storage buckets. A private data snapshot was captured outside the repository before
+the live writes below; a provider backup/restore drill is still not verified.
+
+Implemented locally and verified:
+
+- Fixed broken CRM route identifiers and added baseline response headers.
+- Removed usable demo credential copy and added owner-controlled provisioning.
+- Added login validation, uniform failure responses, and interim throttling.
+- Added `pnpm test`, `.nvmrc`, and the nine audit reports under `docs/audit/`.
+- Added CRM-first public lead intake with a client idempotency key, atomic
+  customer/trip/activity RPC, and Sheets as a best-effort mirror.
+
+Applied to the linked database through `supabase db query --linked`:
+
+- `008_harden_profile_updates.sql` — staff can no longer change their own role or
+  active state through the profile update policy.
+- `009_public_lead_intake.sql` — durable public lead receipt table and
+  service-role-only intake RPC.
+
+The RPC passed schema lint, and a publishable-key call returned HTTP 401. One
+synthetic lead was submitted through the local `/api/leads` route and verified in
+CRM as `ST-2026-00014`; replaying the same key returned `duplicate: true`. The
+synthetic receipt, trip, activity, and customer were then removed in a targeted
+transaction. Live post-test counts are back to the pre-test values.
+
+Migration `007_disable_demo_credentials.sql` was applied to the linked project;
+both known seed accounts are now inactive with the `!disabled!` marker.
 
 ## Phase 0 — Audit
 
@@ -90,9 +123,9 @@ lead to the live Google Sheet, D9 AI-crawler policy.
 - [ ] Confirm the canonical domain (D4).
 - [ ] Decide D5–D9.
 - [ ] Confirm whether I may submit one test lead to the live Google Sheet (D8).
-- [ ] *Before Phase 1's first migration touches any live database: take a
-      Supabase dashboard backup (or `pg_dump`) and tell me it is done. I will
-      wait for your confirmation.*
+- [ ] Take/confirm a provider backup and complete a restore drill before further
+      destructive or broad live migrations. The current private snapshot is not a
+      substitute for a provider backup.
 - [ ] **INP measurement** (UNVERIFIED): open the deployed site in Chrome DevTools
       → Performance → record on mobile emulation → open the mobile nav drawer and
       submit the enquiry form. Report the INP value.
@@ -105,7 +138,7 @@ lead to the live Google Sheet, D9 AI-crawler policy.
 
 ## Phase 1 — Foundation
 
-**Status:** ⏸️ Not started — blocked on D1/D2.
+**Status:** 🟡 In progress — linked project verified; Auth request-path migration and Storage cutover remain.
 
 Plan of record: Supabase Auth, real RLS, `proxy.ts` protection, Supabase Storage,
 `profiles` table, zod on all inputs, one-time first-admin script, CSV import of
@@ -120,5 +153,6 @@ existing Sheets leads. Estimated 4–6 days once unblocked.
   `src/app/globals.css`, `src/app/layout.tsx`, plus 13 untracked component files).
   **Do not revert or force-stage these.** They belong to the owner.
 - `main` deploys to Vercel on merge. Never merge without explicit approval.
-- `supabase/README.md` still documents the old `schema.sql` / `seed.sql` flow and
-  publishes the `admin123` password. Update it in Phase 1.
+- The linked project has no Auth users, no profiles, and no Storage buckets. Provision
+  a real admin through the controlled setup path before enabling CRM access, then
+  migrate the request path away from the legacy custom session connection.

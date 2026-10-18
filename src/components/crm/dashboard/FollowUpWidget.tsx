@@ -6,6 +6,7 @@ import { formatCRMDate } from '@/lib/crm/format';
 interface FollowUpWidgetProps {
   overdue: Array<{
     id: number;
+    trip_id: number;
     scheduled_date: string;
     scheduled_time: string | null;
     followup_type: string;
@@ -16,6 +17,7 @@ interface FollowUpWidgetProps {
   }>;
   today: Array<{
     id: number;
+    trip_id: number;
     scheduled_time: string | null;
     followup_type: string;
     note: string | null;
@@ -50,7 +52,7 @@ export default function FollowUpWidget({ overdue, today }: FollowUpWidgetProps) 
               {overdue.map(f => (
                 <Link
                   key={f.id}
-                  href={`/crm/leads/${f.id}`}
+                  href={`/crm/leads/${f.trip_id}`}
                   className="flex items-center justify-between p-2.5 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
                 >
                   <div className="min-w-0">
@@ -80,7 +82,7 @@ export default function FollowUpWidget({ overdue, today }: FollowUpWidgetProps) 
               {today.map(f => (
                 <Link
                   key={f.id}
-                  href={`/crm/leads/${f.id}`}
+                  href={`/crm/leads/${f.trip_id}`}
                   className="flex items-center justify-between p-2.5 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
                 >
                   <div className="min-w-0">

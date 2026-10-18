@@ -1,25 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/crm/db';
 import { verifyPassword, createSession } from '@/lib/crm/auth';
+import { crmLoginSchema } from '@/lib/validations';
+import {
+  clearFailedLogins,
+  getRequestIp,
+  isLoginRateLimited,
+  recordFailedLogin,
+} from '@/lib/crm/login-rate-limit';
 
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { email, password } = body;
+  const ip = getRequestIp(request);
 
-    if (!email || !password) {
+  try {
+    const body = await request.json().catch(() => null);
+    const parsed = crmLoginSchema.safeParse(body);
+
+    if (!parsed.success) {
       return NextResponse.json(
         { error: 'Email and password are required' },
         { status: 400 }
       );
     }
 
+    const rateLimit = isLoginRateLimited(ip);
+    if (rateLimit.limited) {
+      return NextResponse.json(
+        { error: 'Too many sign-in attempts. Please try again later.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) },
+        }
+      );
+    }
+
+    const { email, password } = parsed.data;
+    const normalizedEmail = email.toLowerCase();
+
     const db = getDb();
     const user = await db.prepare(`
       SELECT id, name, email, phone, password_hash, role, is_active
       FROM users
       WHERE email = ?
-    `).get(email) as {
+    `).get(normalizedEmail) as {
       id: number;
       name: string;
       email: string;
@@ -29,29 +52,25 @@ export async function POST(request: NextRequest) {
       is_active: number;
     } | undefined;
 
-    if (!user) {
+    if (!user || !user.is_active) {
+      recordFailedLogin(ip);
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
-      );
-    }
-
-    if (!user.is_active) {
-      return NextResponse.json(
-        { error: 'Account is disabled' },
-        { status: 403 }
       );
     }
 
     const isValid = await verifyPassword(password, user.password_hash);
     if (!isValid) {
+      recordFailedLogin(ip);
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
       );
     }
 
-    const token = await createSession(user.id);
+    await createSession(user.id);
+    clearFailedLogins(ip);
 
     return NextResponse.json({
       ok: true,

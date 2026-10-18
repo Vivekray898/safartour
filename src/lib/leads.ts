@@ -43,9 +43,14 @@ export async function submitLead(
   );
 
   try {
-    const res = await fetch("/api/leads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(payload.submissionId
+            ? { "Idempotency-Key": payload.submissionId }
+            : {}),
+        },
       body: JSON.stringify(payload),
       signal: controller.signal,
     });

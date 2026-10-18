@@ -14,11 +14,12 @@ cp .env.example .env.local   # fill in values (see below)
 pnpm dev                     # http://localhost:3000
 pnpm build && pnpm start     # production
 pnpm lint                    # eslint
+pnpm test                    # offline static checks
 ```
 
 ## Requirements
 
-- **Node.js** 20+
+- **Node.js** 24.19.0 (`.nvmrc`)
 - **pnpm** 11.x (`packageManager` field pins it)
 - **Supabase** project (hosted PostgreSQL) — the CRM stores all data there. No MySQL, no SQLite, no local database server.
 
@@ -28,7 +29,8 @@ Copy `.env.example` → `.env.local` and set:
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | yes (CRM) | Supabase PostgreSQL connection string (server-only). See **CRM & Database** below |
+| `SUPABASE_DB_URL` | yes (CRM) | Supabase Session Pooler PostgreSQL URI (server-only; preferred) |
+| `DATABASE_URL` | fallback | Supabase PostgreSQL URI (server-only; direct URI may fail DNS in some environments) |
 | `NEXT_PUBLIC_SITE_URL` | yes (prod) | Canonical URLs, sitemap, JSON-LD |
 | `NEXT_PUBLIC_WHATSAPP_NUMBER` | yes | WhatsApp number, international format without `+` (e.g. `917001588581`) |
 | `NEXT_PUBLIC_GOOGLE_SHEETS_ENDPOINT` | recommended | Apps Script web-app URL where leads are stored. See **[GOOGLE-SHEETS-SETUP.md](./GOOGLE-SHEETS-SETUP.md)** |
@@ -58,24 +60,32 @@ Create a project at [supabase.com](https://supabase.com), then open **Project Se
 
 ### 2. Apply the schema & seed
 
-In the Supabase **SQL Editor**, run in order:
+In the Supabase **SQL Editor**, run the migrations in numeric order, `001` through
+`009`. They cover the legacy-compatible CRM schema, Auth profiles and RLS,
+private document Storage, credential cleanup, profile-update hardening, and the
+CRM-first public lead RPC. Review migration `007` against the owner-approved
+database before applying it because it deactivates two known seed addresses.
 
-1. `supabase/migrations/001_initial_schema.sql` — all tables (users, customers, trips/leads, quotations + items, payments, followups, tasks, activities, communications, documents, itinerary_days, hotels, suppliers, drivers, sessions, audit_logs), foreign keys, indexes and **Row Level Security enabled on every table**.
-2. `supabase/migrations/002_seed_data.sql` — demo dataset + the first users:
+`002_seed_data.sql` creates demo rows with disabled placeholder users. It does not
+publish or enable a default password.
 
-   | Email | Password | Role |
-   | --- | --- | --- |
-   | `admin@safartour.crm` | `admin123` | admin |
-   | `rajesh@safartour.crm` | `admin123` | employee |
+After the migrations, provision the first account from a machine that has access to the database:
 
-   Change these passwords after first login (CRM → Settings → Users).
+   ```bash
+   CRM_BOOTSTRAP_PASSWORD='use-a-new-password' \
+     pnpm crm:user -- admin@example.com 'Admin User' admin
+   ```
+
+   The password is read from the environment and is never printed. Use the
+   `employee` role for a non-admin account. Do not reuse a password from this
+   repository or commit `CRM_BOOTSTRAP_PASSWORD`.
 
 ### 3. Point the app at the database
 
 `.env.local`:
 
 ```env
-DATABASE_URL=postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+SUPABASE_DB_URL=postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
 ```
 
 The variable is server-only (no `NEXT_PUBLIC_` prefix), so the connection string never reaches the browser bundle.
@@ -83,8 +93,12 @@ The variable is server-only (no `NEXT_PUBLIC_` prefix), so the connection string
 ### Security model
 
 - **RLS is enabled on all tables** with no public policies: browser-facing anon/authenticated keys cannot read or write CRM data.
-- The Next.js server is the only client; it enforces authentication (HTTP-only session cookies, `src/lib/crm/auth.ts`) and role/assignment permissions (admin vs employee, `src/lib/crm/permissions.ts`) per request.
-- If you later add Supabase Storage/Auth features, `SUPABASE_SERVICE_ROLE_KEY` must remain server-only too.
+- The Next.js server is the only client and currently uses HTTP-only custom
+  session cookies (`src/lib/crm/auth.ts`). The live database has the Auth/RLS
+  foundation, but the request path has not yet migrated from the legacy session
+  model and record-level assignment enforcement is not complete in the app.
+- `SUPABASE_SECRET_KEY` is server-only. It is used by the public lead RPC and
+  controlled server-side Storage operations.
 
 ### Local development & production build
 
@@ -102,7 +116,9 @@ Set in the Vercel project → Settings → Environment Variables:
 - All `NEXT_PUBLIC_*` variables from the table above
 - `CRM_SECRET_KEY`, `CRM_SITE_URL` as needed
 
-Everything persists in Supabase — Vercel's serverless filesystem is not used for data (uploaded documents go to `crm-documents/` on disk in dev; move to Supabase Storage for multi-region production use).
+Everything persists in Supabase — Vercel's serverless filesystem is not used for
+CRM data. The document upload handlers still use local disk and must be migrated
+to the private Storage bucket before production document workflows are enabled.
 
 ---
 

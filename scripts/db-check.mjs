@@ -8,11 +8,11 @@
  */
 import postgres from 'postgres';
 
-const url = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
+const url = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
 
 if (!url) {
   console.error(
-    '✗ DATABASE_URL is not set.\n' +
+    '✗ SUPABASE_DB_URL or DATABASE_URL is not set.\n' +
       '  Add it to .env.local (Supabase Dashboard → Project Settings → Database → Connection string → URI).'
   );
   process.exit(1);
@@ -24,6 +24,7 @@ const EXPECTED_TABLES = [
   'users', 'sessions', 'customers', 'trips', 'quotations', 'quotation_items',
   'payments', 'followups', 'tasks', 'activities', 'communications',
   'documents', 'itinerary_days', 'hotels', 'suppliers', 'drivers', 'audit_logs',
+  'company_settings', 'profiles', 'public_lead_receipts',
 ];
 
 try {
@@ -46,7 +47,7 @@ try {
 
   if (missing.length) {
     console.error(`✗ Missing tables: ${missing.join(', ')}`);
-    console.error('  Run supabase/migrations/001_initial_schema.sql (and 002_seed_data.sql) in the Supabase SQL Editor.');
+    console.error('  Run the ordered files in supabase/migrations/ in the Supabase SQL Editor.');
     process.exitCode = 1;
   } else {
     console.log(`✓ All ${EXPECTED_TABLES.length} CRM tables present (RLS: ${tables.filter(t => t.rls).length}/${tables.length} enabled)`);

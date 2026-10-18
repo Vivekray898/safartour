@@ -115,7 +115,7 @@ export default async function CustomerPage({
         <div className="flex flex-wrap gap-2">
           <CustomerDetailActions customer={customerRow} canEdit={canEdit} />
           <Link
-            href={`/crm/leads/new?customerId=${customer.id}`}
+            href="/crm/leads/new"
             className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
             <Pencil className="w-4 h-4" />
@@ -251,7 +251,7 @@ export default async function CustomerPage({
           <div className="p-4 border-b border-gray-100 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">Trips / Enquiries</h2>
             <Link
-              href="/crm/leads?customerId"
+              href="/crm/leads"
               className="text-sm text-green-600 hover:text-green-700 font-medium"
             >
               View all →

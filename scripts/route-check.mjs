@@ -11,8 +11,13 @@
  *  - CRM pages never contain public-site chrome and vice versa
  */
 const BASE = process.argv[2] || process.env.BASE_URL || 'http://localhost:50770';
-const EMAIL = process.env.CRM_EMAIL || 'enquiry@safartour.in';
-const PASS = process.env.CRM_PASS || 'admin123';
+const EMAIL = process.env.CRM_EMAIL;
+const PASS = process.env.CRM_PASS;
+
+if (!EMAIL || !PASS) {
+  console.error('Set CRM_EMAIL and CRM_PASS before running the authenticated route check.');
+  process.exit(2);
+}
 
 let cookie = '';
 let pass = 0, fail = 0;
