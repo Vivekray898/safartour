@@ -161,7 +161,7 @@ export default async function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
@@ -172,13 +172,13 @@ export default async function DashboardPage() {
             href="/crm/leads/new"
             className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4" aria-hidden="true" />
             New Lead
           </Link>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="New Leads"
           value={stats.newLeads.count}
@@ -209,7 +209,7 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Bookings"
           value={stats.bookings.count}
@@ -240,11 +240,11 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="min-w-0">
           <PipelineChart pipeline={pipeline} />
         </div>
-        <div>
+        <div className="min-w-0">
           <FollowUpWidget
             overdue={overdueFollowups}
             today={todayFollowups}
@@ -253,8 +253,12 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <UpcomingTripsList trips={upcomingTrips} />
-        <RevenueSummary revenue={revenue} />
+        <div className="min-w-0">
+          <UpcomingTripsList trips={upcomingTrips} />
+        </div>
+        <div className="min-w-0">
+          <RevenueSummary revenue={revenue} />
+        </div>
       </div>
     </div>
   );

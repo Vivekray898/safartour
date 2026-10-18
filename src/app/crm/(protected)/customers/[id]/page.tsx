@@ -246,115 +246,120 @@ export default async function CustomerPage({
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200">
-          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Trips / Enquiries</h2>
-            <Link
-              href="/crm/leads"
-              className="text-sm text-green-600 hover:text-green-700 font-medium"
-            >
-              View all →
-            </Link>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Trip Ref</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Destination</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Quoted</th>
-                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Paid</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {trips.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                      <FileText className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                      <p className="text-sm">No trips yet</p>
-                    </td>
+      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+        <div className="min-w-0">
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-base font-semibold text-gray-900">Trips / Enquiries</h2>
+              <Link
+                href="/crm/leads"
+                className="text-sm text-green-600 hover:text-green-700 font-medium"
+              >
+                View all
+                <span aria-hidden="true"> →</span>
+              </Link>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50">
+                    <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider">Trip</th>
+                    <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider">Destination</th>
+                    <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>
+                    <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="text-right px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider">Quoted</th>
+                    <th className="text-right px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider">Paid</th>
+                    <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider">Updated</th>
                   </tr>
-                ) : (
-                  trips.map((trip: { id: number; reference: string; destination: string | null; start_date: string | null; status: string; quoted_amount: number | null; paid_amount: number | null; updated_at: string }) => (
-                    <tr key={trip.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <Link href={`/crm/leads/${trip.id}`} className="font-medium text-green-700 hover:text-green-800 text-sm">
-                          {trip.reference}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{trip.destination || '-'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {formatCRMDate(trip.start_date, '—')}
-                      </td>
-                      <td className="px-4 py-3">
-                        <CRMStatusBadge status={trip.status} size="sm" />
-                      </td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-900">
-                        {trip.quoted_amount ? formatCurrency(trip.quoted_amount) : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-right">
-                        <span className={trip.paid_amount !== null && trip.quoted_amount ? (trip.paid_amount >= trip.quoted_amount ? 'text-green-600' : 'text-amber-600') : 'text-gray-400'}>
-                          {trip.paid_amount ? formatCurrency(trip.paid_amount) : '-'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
-                        {formatCRMDate(trip.updated_at, '—')}
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {trips.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                        <FileText className="w-7 h-7 mx-auto mb-2 text-gray-300" aria-hidden="true" />
+                        <p className="text-sm">No trips yet</p>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    trips.map((trip: { id: number; reference: string; destination: string | null; start_date: string | null; status: string; quoted_amount: number | null; paid_amount: number | null; updated_at: string }) => (
+                      <tr key={trip.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-2.5">
+                          <Link href={`/crm/leads/${trip.id}`} className="font-medium text-green-700 hover:text-green-800 text-sm">
+                            {trip.reference}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-2.5 text-sm text-gray-900 max-w-[120px] truncate">{trip.destination || '-'}</td>
+                        <td className="px-4 py-2.5 text-sm text-gray-600">
+                          {formatCRMDate(trip.start_date, '—')}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <CRMStatusBadge status={trip.status} size="sm" />
+                        </td>
+                        <td className="px-4 py-2.5 text-sm text-right text-gray-900 tabular-nums">
+                          {trip.quoted_amount ? formatCurrency(trip.quoted_amount) : '-'}
+                        </td>
+                        <td className="px-4 py-2.5 text-sm text-right tabular-nums">
+                          <span className={trip.paid_amount !== null && trip.quoted_amount ? (trip.paid_amount >= trip.quoted_amount ? 'text-green-600' : 'text-amber-600') : 'text-gray-400'}>
+                            {trip.paid_amount ? formatCurrency(trip.paid_amount) : '-'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5 text-sm text-gray-500">
+                          {formatCRMDate(trip.updated_at, '—')}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="p-4 border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">Activity Timeline</h2>
-          </div>
-          <div className="p-4 max-h-96 overflow-auto">
-            {activities.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Clock className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                <p className="text-sm">No activities yet</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {activities.map(activity => (
-                  <div key={activity.id} className="flex gap-3">
-                    <div className="flex flex-col items-center">
-                      <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
-                      {activities.indexOf(activity) < activities.length - 1 && (
-                        <div className="w-px flex-1 bg-gray-200 mt-1"></div>
-                      )}
-                    </div>
-                    <div className="flex-1 pb-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="text-sm text-gray-700">{activity.description}</p>
-                        <span className="text-xs text-gray-400">
-                          {formatCRMDate(activity.created_at, '—')}
-                        </span>
+        <div className="min-w-0">
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="p-4 border-b border-gray-100">
+              <h2 className="text-base font-semibold text-gray-900">Activity Timeline</h2>
+            </div>
+            <div className="p-4 max-h-[360px] overflow-y-auto">
+              {activities.length === 0 ? (
+                <div className="text-center py-6 text-gray-500">
+                  <Clock className="w-6 h-6 mx-auto mb-2 text-gray-300" aria-hidden="true" />
+                  <p className="text-sm">No activities yet</p>
+                </div>
+              ) : (
+                <div className="space-y-0">
+                  {activities.map((activity, idx) => (
+                    <div key={activity.id} className="flex gap-3 pb-4 last:pb-0">
+                      <div className="flex flex-col items-center shrink-0">
+                        <div className="w-2.5 h-2.5 rounded-full bg-green-500" aria-hidden="true" />
+                        {idx < activities.length - 1 && (
+                          <div className="w-px flex-1 bg-gray-200 mt-1.5" aria-hidden="true" />
+                        )}
                       </div>
-                      {activity.user_name && (
-                        <p className="text-xs text-gray-500 mt-0.5">by {activity.user_name}</p>
-                      )}
-                      {activity.trip_reference && (
-                        <Link
-                          href={`/crm/leads/${activity.trip_id}`}
-                          className="text-xs text-green-600 hover:underline mt-0.5 inline-block"
-                        >
-                          {activity.trip_reference}
-                        </Link>
-                      )}
+                      <div className="flex-1 min-w-0 pb-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-sm text-gray-700 truncate">{activity.description}</p>
+                          <span className="text-xs text-gray-400 tabular-nums shrink-0">
+                            {formatCRMDate(activity.created_at, '—')}
+                          </span>
+                        </div>
+                        {activity.user_name && (
+                          <p className="text-xs text-gray-500 mt-0.5">by {activity.user_name}</p>
+                        )}
+                        {activity.trip_reference && (
+                          <Link
+                            href={`/crm/leads/${activity.trip_id}`}
+                            className="text-xs text-green-600 hover:underline mt-0.5 inline-block"
+                          >
+                            {activity.trip_reference}
+                          </Link>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

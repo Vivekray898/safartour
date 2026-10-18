@@ -2,7 +2,8 @@
 import bcrypt from 'bcryptjs';
 import postgres from 'postgres';
 
-const [, , emailArg, nameArg, roleArg = 'employee'] = process.argv;
+const [, , ...rawArgs] = process.argv;
+const [emailArg, nameArg, roleArg = 'employee'] = rawArgs.filter((arg) => arg !== '--');
 const email = emailArg?.trim().toLowerCase();
 const name = nameArg?.trim();
 const role = roleArg.trim().toLowerCase();

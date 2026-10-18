@@ -22,7 +22,7 @@ interface UpcomingTripsListProps {
 }
 
 export default function UpcomingTripsList({ trips }: UpcomingTripsListProps) {
-  const formatDate = (date: string | null) => formatCRMDate(date, 'N/A');
+  const formatDate = (date: string | null) => formatCRMDate(date, '—');
 
   const getVehicleLabel = (vehicle: string | null) => {
     if (!vehicle) return 'Not assigned';
@@ -30,24 +30,25 @@ export default function UpcomingTripsList({ trips }: UpcomingTripsListProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Upcoming Trips</h2>
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+        <h2 className="text-base font-semibold text-gray-900">Upcoming Trips</h2>
         <Link
           href="/crm/leads?status=booked"
           className="text-sm text-green-600 hover:text-green-700 font-medium"
         >
-          View all →
+          View all
+          <span aria-hidden="true"> →</span>
         </Link>
       </div>
 
       {trips.length === 0 ? (
         <div className="p-6 text-center text-gray-500">
-          <Calendar className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+          <Calendar className="w-7 h-7 mx-auto mb-2 text-gray-300" aria-hidden="true" />
           <p className="text-sm">No upcoming trips scheduled</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="divide-y divide-gray-50">
           {trips.map(trip => {
             const pending = (trip.quoted_amount || 0) - (trip.paid_amount || 0);
 
@@ -55,37 +56,43 @@ export default function UpcomingTripsList({ trips }: UpcomingTripsListProps) {
               <Link
                 key={trip.id}
                 href={`/crm/leads/${trip.id}`}
-                className="block p-3 border border-gray-100 rounded-lg hover:border-green-200 hover:bg-green-50 transition-colors"
+                className="block p-3 sm:p-4 hover:bg-green-50 transition-colors"
               >
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded">
                         {formatDate(trip.start_date)}
                       </span>
-                      <span className="text-xs text-gray-500">{trip.reference}</span>
+                      <span className="text-xs text-gray-500 font-mono">{trip.reference}</span>
                     </div>
                     <div className="font-semibold text-gray-900 truncate">{trip.customer_name || 'No customer'}</div>
                     <div className="text-sm text-gray-600 truncate">{trip.destination || 'No destination'}</div>
                   </div>
-                  <div className="text-right flex-shrink-0 ml-3">
-                    <div className="text-sm font-medium text-gray-900">{trip.total_pax || 0} pax</div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-sm font-medium text-gray-900 tabular-nums">{trip.total_pax || 0} pax</div>
                     {pending > 0 && (
-                      <div className="text-xs text-red-600 mt-0.5">{formatCurrency(pending)} pending</div>
+                      <div className="text-xs text-red-600 font-medium mt-0.5">{formatCurrency(pending)} pending</div>
                     )}
                   </div>
                 </div>
 
-                <div className="mt-2 flex items-center gap-3 text-xs text-gray-500 pt-2 border-t border-gray-50">
+                <div className="mt-2 flex items-center gap-3 text-xs text-gray-500 pt-2.5 border-t border-gray-50 flex-wrap">
                   <span className="flex items-center gap-1">
-                    <Users className="w-3 h-3" />
-                    {trip.start_date ? formatDate(trip.start_date) + ' - ' + (trip.end_date ? formatDate(trip.end_date) : 'N/A') : 'No dates'}
+                    <Users className="w-3 h-3 shrink-0" aria-hidden="true" />
+                    {formatDate(trip.start_date)}
+                    {trip.end_date && (
+                      <>
+                        <span className="text-gray-300">—</span>
+                        {formatDate(trip.end_date)}
+                      </>
+                    )}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Car className="w-3 h-3" />
+                    <Car className="w-3 h-3 shrink-0" aria-hidden="true" />
                     {getVehicleLabel(trip.vehicle_type)}
                   </span>
-                  <CRMStatusBadge status={trip.status} />
+                  <CRMStatusBadge status={trip.status} size="sm" />
                 </div>
               </Link>
             );

@@ -42,15 +42,19 @@ function NavLinks({
   user: CRMUser;
   pathname: string;
   onNavigate?: () => void;
-  layout: 'drawer' | 'rail';
+  layout: 'drawer' | 'rail' | 'responsive';
 }) {
   const items = navItems.filter(item => item.roles.includes(user.role));
+  const compact = layout === 'rail';
+  const responsive = layout === 'responsive';
   return (
     <nav
       className={
-        layout === 'rail'
+        compact
           ? 'flex-1 px-2 py-4 space-y-1 overflow-y-auto'
-          : 'flex-1 px-3 py-4 space-y-1 overflow-y-auto'
+          : responsive
+            ? 'flex-1 px-2 py-4 lg:px-3 space-y-1 overflow-y-auto'
+            : 'flex-1 px-3 py-4 space-y-1 overflow-y-auto'
       }
     >
       {items.map(item => {
@@ -63,8 +67,10 @@ function NavLinks({
             title={item.label}
             aria-current={isActive ? 'page' : undefined}
             className={`flex items-center rounded-lg text-sm font-medium transition-colors ${
-              layout === 'rail'
+              compact
                 ? 'justify-center p-2.5'
+                : responsive
+                  ? 'justify-center p-2.5 lg:justify-start lg:gap-3 lg:px-3 lg:py-2.5'
                 : 'gap-3 px-3 py-2.5'
             } ${
               isActive
@@ -74,6 +80,7 @@ function NavLinks({
           >
             <item.icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-green-600' : 'text-gray-400'}`} />
             {layout === 'drawer' && <span className="truncate">{item.label}</span>}
+            {responsive && <span className="hidden lg:inline truncate">{item.label}</span>}
           </Link>
         );
       })}
@@ -87,13 +94,26 @@ function SidebarFooter({
   onLogout,
 }: {
   user: CRMUser;
-  layout: 'drawer' | 'rail';
+  layout: 'drawer' | 'rail' | 'responsive';
   onLogout: () => void;
 }) {
+  const compact = layout === 'rail';
+  const responsive = layout === 'responsive';
   return (
-    <div className={`py-4 border-t border-gray-200 ${layout === 'rail' ? 'px-2' : 'px-3'}`}>
+    <div className={`py-4 border-t border-gray-200 ${compact ? 'px-2' : responsive ? 'px-2 lg:px-3' : 'px-3'}`}>
       {layout === 'drawer' && (
         <div className="flex items-center gap-3 px-3 py-2 min-w-0">
+          <div className="w-8 h-8 shrink-0 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-600">
+            {user.name.charAt(0)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-gray-900 truncate">{user.name}</div>
+            <div className="text-xs text-gray-500 truncate">{user.email}</div>
+          </div>
+        </div>
+      )}
+      {responsive && (
+        <div className="hidden lg:flex items-center gap-3 px-3 py-2 min-w-0">
           <div className="w-8 h-8 shrink-0 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-600">
             {user.name.charAt(0)}
           </div>
@@ -108,26 +128,35 @@ function SidebarFooter({
         onClick={onLogout}
         title="Sign out"
         className={`flex items-center gap-2 px-3 py-2 mt-1 text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ${
-          layout === 'rail' ? 'justify-center' : 'w-full'
+          compact ? 'justify-center' : responsive ? 'justify-center lg:w-full lg:justify-start' : 'w-full'
         }`}
       >
         <LogOut className="w-4 h-4 shrink-0" />
         {layout === 'drawer' && 'Sign out'}
+        {responsive && <span className="hidden lg:inline">Sign out</span>}
       </button>
     </div>
   );
 }
 
-function Brand({ layout }: { layout: 'drawer' | 'rail' }) {
+function Brand({ layout }: { layout: 'drawer' | 'rail' | 'responsive' }) {
+  const compact = layout === 'rail';
+  const responsive = layout === 'responsive';
   return (
     <div className={`flex items-center gap-3 py-4 border-b border-gray-200 ${
-      layout === 'rail' ? 'justify-center px-2' : 'px-5'
+      compact ? 'justify-center px-2' : responsive ? 'justify-center px-2 lg:justify-start lg:px-5' : 'px-5'
     }`}>
       <div className="w-8 h-8 shrink-0 rounded-lg bg-green-700 flex items-center justify-center">
         <span className="text-white font-bold text-sm">ST</span>
       </div>
       {layout === 'drawer' && (
         <div className="min-w-0">
+          <div className="font-semibold text-gray-900 text-sm">Safar Tours</div>
+          <div className="text-xs text-gray-500">CRM</div>
+        </div>
+      )}
+      {responsive && (
+        <div className="hidden lg:block min-w-0">
           <div className="font-semibold text-gray-900 text-sm">Safar Tours</div>
           <div className="text-xs text-gray-500">CRM</div>
         </div>
@@ -260,11 +289,11 @@ export default function CRMShell({
         Skip to content
       </a>
 
-      {/* Desktop icon rail */}
+      {/* Desktop rail; expands to labeled navigation at large widths */}
       <aside className="hidden md:flex md:flex-col md:w-16 lg:w-56 bg-white border-r border-gray-200 fixed left-0 top-0 bottom-0 z-30">
-        <Brand layout="rail" />
-        <NavLinks user={user} pathname={pathname} layout="rail" />
-        <SidebarFooter user={user} layout="rail" onLogout={handleLogout} />
+        <Brand layout="responsive" />
+        <NavLinks user={user} pathname={pathname} layout="responsive" />
+        <SidebarFooter user={user} layout="responsive" onLogout={handleLogout} />
       </aside>
 
       {/* Mobile slide-over drawer */}

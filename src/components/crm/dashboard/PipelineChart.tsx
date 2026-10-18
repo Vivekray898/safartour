@@ -51,29 +51,34 @@ export default function PipelineChart({ pipeline }: PipelineChartProps) {
     <div className="bg-white rounded-lg border border-gray-200 p-5">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Lead Pipeline</h2>
 
-      <div className="flex items-end gap-2 h-40">
-        {pipelineOrder.map(status => {
-          const data = pipeline.find(p => p.status === status);
-          const count = data?.count || 0;
-          const height = totalLeads > 0 ? (count / maxCount) * 100 : 0;
-          const config = getStatusConfig(status);
+      <div className="overflow-x-auto pb-2 -mx-1 px-1">
+        <div className="flex items-end gap-1.5 min-w-[600px]">
+          {pipelineOrder.map(status => {
+            const data = pipeline.find(p => p.status === status);
+            const count = data?.count || 0;
+            const height = totalLeads > 0 ? (count / maxCount) * 100 : 0;
+            const config = getStatusConfig(status);
 
-          return (
-            <div key={status} className="flex-1 flex flex-col items-center gap-2">
-              <div
-                className={`w-full rounded-t-md ${colors[status] || 'bg-gray-200'} transition-all hover:opacity-80 ${height > 0 ? '' : 'min-h-[4px]'}`}
-                style={{ height: `${Math.max(height, 4)}%` }}
-                title={`${config?.label || status}: ${count}`}
-              />
-              <div className="text-xs text-gray-600 text-center">
-                {count}
+            return (
+              <div key={status} className="min-w-0 flex-1 h-full flex flex-col items-center gap-2">
+                <div className="w-full min-h-0 flex-1 flex items-end">
+                  <div
+                    className={`w-full rounded-t-md ${colors[status] || 'bg-gray-200'} transition-all hover:opacity-80`}
+                    style={{ height: count > 0 ? `${Math.max(height, 8)}%` : '4px' }}
+                    title={`${config?.label || status}: ${count}`}
+                    aria-label={`${config?.label || status}: ${count}`}
+                  />
+                </div>
+                <div className="text-xs text-gray-600 text-center tabular-nums">
+                  {count}
+                </div>
+                <div className="text-xs text-gray-500 text-center leading-tight max-w-[72px]">
+                  {config?.label || status}
+                </div>
               </div>
-              <div className="text-xs text-gray-500 text-center leading-tight max-w-[60px]">
-                {config?.label || status}
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       <div className="mt-4 pt-4 border-t border-gray-100">
